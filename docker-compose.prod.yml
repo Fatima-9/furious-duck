@@ -1,0 +1,6 @@
+services:
+  frontend:
+    command: npm run build
+  backend:
+    environment:
+      - NODE_ENV=production
