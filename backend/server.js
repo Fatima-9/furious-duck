@@ -1,22 +1,7 @@
-require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
-const { Pool } = require("pg");
 
 const app = express();
-const port = process.env.PORT || 5000;
-const databaseUrl = process.env.DATABASE_URL;
-
-const pool = databaseUrl
-  ? new Pool({
-      connectionString: databaseUrl,
-      ssl: {
-        rejectUnauthorized: false,
-      },
-    })
-  : null;
-
 app.use(cors());
 app.use(express.json());
 
@@ -24,28 +9,6 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.get("/api/db/health", async (req, res) => {
-  if (!pool) {
-    return res.status(500).json({
-      status: "error",
-      message: "DATABASE_URL is not configured",
-    });
-  }
-
-  try {
-    const result = await pool.query("SELECT NOW() AS now");
-    return res.json({
-      status: "ok",
-      databaseTime: result.rows[0].now,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status: "error",
-      message: "Database connection failed",
-    });
-  }
-});
-
-app.listen(port, () => {
-  console.log(`Backend running on port ${port}`);
+app.listen(5000, () => {
+  console.log("Backend running on port 5000");
 });
