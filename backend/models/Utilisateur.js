@@ -1,4 +1,5 @@
 const BaseModel = require("./BaseModel");
+const { pool } = require("../config/db");
 
 const Utilisateur = new BaseModel({
   tableName: "utilisateurs",
@@ -17,5 +18,15 @@ const Utilisateur = new BaseModel({
     "boutique_id",
   ],
 });
+
+Utilisateur.findByEmail = async (email) => {
+  Utilisateur.ensureDatabaseConfigured();
+
+  const result = await pool.query("SELECT * FROM utilisateurs WHERE email = $1", [
+    email,
+  ]);
+
+  return result.rows[0] || null;
+};
 
 module.exports = Utilisateur;
