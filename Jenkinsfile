@@ -7,17 +7,11 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
 
-  parameters {
-    booleanParam(
-      name: 'RUN_DOCKER_COMPOSE_TESTS',
-      defaultValue: false,
-      description: 'Run Docker Compose health checks with Jenkins credentials.'
-    )
-  }
-
   environment {
     BACKEND_IMAGE = "furious-duck-backend:${BUILD_NUMBER}"
     FRONTEND_IMAGE = "furious-duck-frontend:${BUILD_NUMBER}"
+    JWT_EXPIRES_IN = '1d'
+    RESET_TOKEN_EXPIRES_IN_MINUTES = '60'
   }
 
   stages {
@@ -39,6 +33,45 @@ pipeline {
       steps {
         dir('backend') {
           sh 'find . -path ./node_modules -prune -o -name "*.js" -print -exec node --check {} \\;'
+        }
+      }
+    }
+
+    stage('Backend - Unit Tests') {
+      environment {
+        JWT_SECRET = 'jenkins-unit-test-secret'
+      }
+      steps {
+        dir('backend') {
+          sh 'npm run test:unit'
+        }
+      }
+    }
+
+    stage('Backend - Integration Tests') {
+      steps {
+        withCredentials([
+          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
+          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET')
+        ]) {
+          dir('backend') {
+            sh '''
+              cat > .env <<EOF
+PORT=5000
+DATABASE_URL=${DATABASE_URL}
+JWT_SECRET=${JWT_SECRET}
+JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+RESET_TOKEN_EXPIRES_IN_MINUTES=${RESET_TOKEN_EXPIRES_IN_MINUTES}
+EOF
+
+              npm run test:integration
+            '''
+          }
+        }
+      }
+      post {
+        always {
+          sh 'rm -f backend/.env'
         }
       }
     }
@@ -74,17 +107,7 @@ pipeline {
       }
     }
 
-    stage('Docker Compose - Health Checks') {
-      when {
-        anyOf {
-          branch 'DEV'
-          branch 'main'
-          expression { return params.RUN_DOCKER_COMPOSE_TESTS }
-        }
-      }
-      environment {
-        JWT_EXPIRES_IN = '1d'
-      }
+    stage('Docker Compose - Functional Tests') {
       steps {
         withCredentials([
           string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
@@ -109,6 +132,8 @@ EOF
 
             curl -fsS http://localhost:5000/api/health
             curl -fsS http://localhost:5000/api/db/health
+
+            docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T backend npm run test:integration
           '''
         }
       }

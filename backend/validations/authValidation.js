@@ -10,7 +10,7 @@ function validateEmail(email) {
   validateRequiredString(email, "email");
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(email)) {
+  if (!emailPattern.test(email.trim())) {
     throw new ApiError(400, "email must be valid");
   }
 }
