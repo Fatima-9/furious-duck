@@ -27,8 +27,14 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
   date_inscription TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   statut VARCHAR(50) NOT NULL DEFAULT 'actif',
   role_id INTEGER NOT NULL REFERENCES roles(id_role),
-  boutique_id INTEGER NOT NULL REFERENCES boutiques(id_boutique)
+  boutique_id INTEGER NOT NULL REFERENCES boutiques(id_boutique),
+  reset_token_hash VARCHAR(255),
+  reset_token_expires TIMESTAMP
 );
+
+-- Pour les bases déjà créées avant l'ajout de la réinitialisation de mot de passe
+ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS reset_token_hash VARCHAR(255);
+ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;
 
 CREATE TABLE IF NOT EXISTS campagnes (
   id_campagne SERIAL PRIMARY KEY,
