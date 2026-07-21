@@ -72,4 +72,5 @@ module.exports = {
   register,
   login,
   generateToken,
+  SALT_ROUNDS,
 };
