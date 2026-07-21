@@ -390,6 +390,109 @@ npm run build
 npm run lint
 ```
 
+## CI/CD Jenkins
+
+Le depot contient un `Jenkinsfile` a la racine pour lancer une premiere pipeline CI compatible avec l'organisation actuelle du projet.
+
+Jenkins est lance avec Docker via une image personnalisee qui contient :
+
+- Node.js et npm ;
+- Git ;
+- Docker CLI ;
+- Docker Compose.
+
+### Lancer Jenkins avec Docker
+
+Depuis la racine du projet :
+
+```bash
+docker compose -f docker-compose.jenkins.yml up -d --build
+```
+
+Ouvrir ensuite :
+
+```text
+http://localhost:8080
+```
+
+Recuperer le mot de passe initial :
+
+```bash
+docker compose -f docker-compose.jenkins.yml exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+Installer les plugins suggeres, puis creer le compte administrateur Jenkins.
+
+Si un ancien conteneur Jenkins existe deja avec le nom `jenkins`, l'arreter avant d'utiliser cette configuration :
+
+```bash
+docker stop jenkins
+docker rm jenkins
+```
+
+### Verifier Jenkins et Docker
+
+Verifier que Jenkins tourne :
+
+```bash
+docker compose -f docker-compose.jenkins.yml ps
+```
+
+Verifier que Jenkins a acces aux outils necessaires :
+
+```bash
+docker compose -f docker-compose.jenkins.yml exec jenkins sh -lc "node --version && npm --version && docker --version && docker compose version"
+```
+
+Si ces commandes affichent les versions, Jenkins peut lancer la pipeline du projet.
+
+### Pipeline
+
+La pipeline execute :
+
+- installation des dependances backend avec `npm ci` ;
+- verification syntaxique des fichiers JavaScript backend ;
+- installation des dependances frontend avec `npm ci` ;
+- lint frontend ;
+- build frontend ;
+- build des images Docker backend et frontend ;
+- health checks Docker Compose optionnels.
+
+Les health checks Docker Compose utilisent les fichiers existants :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+Comme PostgreSQL n'est pas lance par Docker Compose, Jenkins doit recevoir la connexion a la base via ses credentials.
+
+Creer ces credentials Jenkins de type `Secret text` :
+
+```text
+furious-duck-database-url
+furious-duck-jwt-secret
+```
+
+La variable `JWT_EXPIRES_IN` est definie a `1d` dans la pipeline.
+
+Par defaut, les health checks Docker Compose se lancent sur les branches `DEV` et `main`. Sur une branche de fonctionnalite, ils peuvent etre lances manuellement en cochant le parametre Jenkins :
+
+```text
+RUN_DOCKER_COMPOSE_TESTS
+```
+
+Convention de branches recommandee :
+
+```text
+feature/nom-fonctionnalite -> DEV -> main
+```
+
+Pour arreter Jenkins :
+
+```bash
+docker compose -f docker-compose.jenkins.yml down
+```
+
 ## Depannage
 
 ### `Cannot find module 'dotenv'`
