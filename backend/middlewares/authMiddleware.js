@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Utilisateur = require("../models/Utilisateur");
+const Role = require("../models/Role");
 const ApiError = require("../utils/apiError");
 const { sanitizeUser } = require("../utils/userPresenter");
 
@@ -34,6 +35,35 @@ async function authenticate(req, res, next) {
   }
 }
 
+// Restreint une route a certains roles. A utiliser TOUJOURS apres `authenticate`,
+// qui remplit req.user a partir de la base (donc role_id fiable, un token modifie
+// n'y change rien).
+//
+//   router.get("/stats", authenticate, authorize("admin"), handler)
+//
+function authorize(...allowedRoles) {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        throw new ApiError(401, "authentication is required");
+      }
+
+      const role = await Role.findById(req.user.role_id);
+
+      if (!role || !allowedRoles.includes(role.libelle)) {
+        throw new ApiError(403, "you do not have permission to access this resource");
+      }
+
+      // On expose le libelle du role pour les handlers qui en ont besoin.
+      req.user.role = role.libelle;
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  };
+}
+
 module.exports = {
   authenticate,
+  authorize,
 };

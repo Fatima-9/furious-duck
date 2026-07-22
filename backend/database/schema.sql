@@ -4,6 +4,22 @@ CREATE TABLE IF NOT EXISTS roles (
   statut VARCHAR(50) NOT NULL DEFAULT 'actif'
 );
 
+-- Roles de base du projet. On fixe les identifiants pour que le role 1 reste
+-- `client` (deja utilise par l'inscription et OAuth via DEFAULT_USER_ROLE_ID).
+-- ON CONFLICT DO NOTHING rend l'insertion rejouable sans creer de doublon.
+INSERT INTO roles (id_role, libelle) VALUES
+  (1, 'client'),
+  (2, 'admin'),
+  (3, 'employe_boutique')
+ON CONFLICT (id_role) DO NOTHING;
+
+-- Reajuste la sequence pour que les prochains roles crees ne rentrent pas
+-- en collision avec les identifiants fixes ci-dessus.
+SELECT setval(
+  pg_get_serial_sequence('roles', 'id_role'),
+  GREATEST((SELECT MAX(id_role) FROM roles), 1)
+);
+
 CREATE TABLE IF NOT EXISTS boutiques (
   id_boutique SERIAL PRIMARY KEY,
   nom VARCHAR(150) NOT NULL,
