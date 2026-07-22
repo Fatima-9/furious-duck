@@ -75,8 +75,14 @@ CREATE TABLE IF NOT EXISTS tickets (
   campagne_id INTEGER NOT NULL REFERENCES campagnes(id_campagne)
 );
 
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS date_utilisation TIMESTAMP;
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS remis BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS date_remise TIMESTAMP;
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS utilisateur_id INTEGER REFERENCES utilisateurs(id_user);
+
 CREATE INDEX IF NOT EXISTS idx_utilisateurs_role_id ON utilisateurs(role_id);
 CREATE INDEX IF NOT EXISTS idx_utilisateurs_boutique_id ON utilisateurs(boutique_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_code_ticket ON tickets(code_ticket);
 CREATE INDEX IF NOT EXISTS idx_tickets_gain_id ON tickets(gain_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_utilisateur_id ON tickets(utilisateur_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_campagne_id ON tickets(campagne_id);
