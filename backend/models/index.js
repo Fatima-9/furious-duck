@@ -2,7 +2,7 @@ const Boutique = require("./Boutique");
 const Campagne = require("./Campagne");
 const Gain = require("./Gain");
 const Role = require("./Role");
-const Ticket = require("./Ticket");
+const Ticket = require("./Tickets");
 const Utilisateur = require("./Utilisateur");
 
 module.exports = {

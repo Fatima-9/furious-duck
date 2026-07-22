@@ -4,6 +4,7 @@ const { pool } = require("./config/db");
 const { client, metricsMiddleware } = require("./config/metrics");
 const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
+const ticketRoutes = require("./routes/ticketRoutes");
 const errorMiddleware = require("./middlewares/errorMiddleware");
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(metricsMiddleware);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", profileRoutes);
+app.use("/api/tickets", ticketRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
