@@ -63,6 +63,10 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
 JWT_SECRET=replace-with-a-long-random-secret
 JWT_EXPIRES_IN=1d
 RESET_TOKEN_EXPIRES_IN_MINUTES=60
+DEFAULT_USER_ROLE_ID=1
+DEFAULT_BOUTIQUE_ID=1
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+FACEBOOK_APP_ID=your-facebook-app-id
 ```
 
 Detail des variables :
@@ -70,6 +74,10 @@ Detail des variables :
 - `JWT_SECRET` : cle utilisee pour signer les jetons. Sans elle, l'API renvoie une erreur 500 sur toutes les routes d'authentification.
 - `JWT_EXPIRES_IN` : duree de validite d'un jeton de connexion. Valeur par defaut `1d`.
 - `RESET_TOKEN_EXPIRES_IN_MINUTES` : duree de validite d'un lien de reinitialisation de mot de passe. Valeur par defaut `60`.
+- `DEFAULT_USER_ROLE_ID` : role attribue aux nouveaux comptes crees via Google/Facebook.
+- `DEFAULT_BOUTIQUE_ID` : boutique rattachee par defaut aux nouveaux comptes crees via Google/Facebook.
+- `GOOGLE_CLIENT_ID` : identifiant client Google utilise pour verifier que le token Google vient bien de votre application.
+- `FACEBOOK_APP_ID` : identifiant application Facebook, utile cote configuration OAuth.
 
 Le fichier `.env` ne doit pas etre versionne. Il contient des informations sensibles.
 
@@ -236,6 +244,27 @@ POST /api/auth/login
 ```
 
 Renvoie l'utilisateur et un jeton JWT.
+
+### S'inscrire ou se connecter avec Google/Facebook
+
+```text
+POST /api/auth/oauth
+```
+
+```json
+{
+  "provider": "google",
+  "token": "token-google-ou-facebook"
+}
+```
+
+Le `provider` accepte `google` ou `facebook`.
+
+Le frontend doit d'abord recuperer un token chez Google ou Facebook, puis l'envoyer au backend. Le backend verifie ce token aupres du fournisseur avant de connecter l'utilisateur ou de creer son compte.
+
+Pour Google, le token attendu est un `id_token`. Pour Facebook, le token attendu est un `access_token`.
+
+Si l'utilisateur n'existe pas encore, l'API cree un compte avec `DEFAULT_USER_ROLE_ID` et `DEFAULT_BOUTIQUE_ID`. Ces valeurs doivent correspondre a des lignes existantes en base de donnees.
 
 ### Demander une reinitialisation de mot de passe
 

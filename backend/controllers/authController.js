@@ -3,6 +3,7 @@ const passwordResetService = require("../services/passwordResetService");
 const {
   validateRegisterPayload,
   validateLoginPayload,
+  validateOAuthPayload,
 } = require("../validations/authValidation");
 const {
   validateForgotPasswordPayload,
@@ -56,9 +57,20 @@ async function resetPassword(req, res) {
   });
 }
 
+async function oauth(req, res) {
+  const payload = validateOAuthPayload(req.body);
+  const result = await authService.oauthLogin(payload);
+
+  return res.json({
+    status: "success",
+    data: result,
+  });
+}
+
 module.exports = {
   register,
   login,
   forgotPassword,
   resetPassword,
+  oauth,
 };
