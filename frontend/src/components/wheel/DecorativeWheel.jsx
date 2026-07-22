@@ -45,7 +45,7 @@ export default function DecorativeWheel() {
           left: '50%',
           transform: 'translate(-50%,-50%)',
           width: 58,
-          height: 58,<w
+          height: 58,
           borderRadius: '50%',
           background: '#0c2012',
           display: 'grid',
