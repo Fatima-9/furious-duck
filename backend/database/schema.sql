@@ -96,6 +96,9 @@ ALTER TABLE tickets ADD COLUMN IF NOT EXISTS remis BOOLEAN NOT NULL DEFAULT fals
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS date_remise TIMESTAMP;
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS utilisateur_id INTEGER REFERENCES utilisateurs(id_user);
 
+-- Trace quel employe a remis le lot en boutique (audit).
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS remis_par INTEGER REFERENCES utilisateurs(id_user);
+
 CREATE INDEX IF NOT EXISTS idx_utilisateurs_role_id ON utilisateurs(role_id);
 CREATE INDEX IF NOT EXISTS idx_utilisateurs_boutique_id ON utilisateurs(boutique_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_code_ticket ON tickets(code_ticket);

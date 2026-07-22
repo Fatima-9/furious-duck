@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const boutiqueRoutes = require("./routes/boutiqueRoutes");
 const errorMiddleware = require("./middlewares/errorMiddleware");
 
 const app = express();
@@ -18,6 +19,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", profileRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/boutique", boutiqueRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
