@@ -16,6 +16,8 @@ const Utilisateur = new BaseModel({
     "statut",
     "role_id",
     "boutique_id",
+    "oauth_provider",
+    "oauth_subject",
     "reset_token_hash",
     "reset_token_expires",
   ],
@@ -37,6 +39,17 @@ Utilisateur.findByResetTokenHash = async (tokenHash) => {
   const result = await pool.query(
     "SELECT * FROM utilisateurs WHERE reset_token_hash = $1",
     [tokenHash]
+  );
+
+  return result.rows[0] || null;
+};
+
+Utilisateur.findByOAuthIdentity = async (provider, subject) => {
+  Utilisateur.ensureDatabaseConfigured();
+
+  const result = await pool.query(
+    "SELECT * FROM utilisateurs WHERE oauth_provider = $1 AND oauth_subject = $2",
+    [provider, subject]
   );
 
   return result.rows[0] || null;

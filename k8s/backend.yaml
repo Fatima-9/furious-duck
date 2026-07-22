@@ -44,6 +44,28 @@ spec:
                 secretKeyRef:
                   name: backend-secrets
                   key: RESET_TOKEN_EXPIRES_IN_MINUTES
+            - name: DEFAULT_USER_ROLE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: DEFAULT_USER_ROLE_ID
+            - name: DEFAULT_BOUTIQUE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: DEFAULT_BOUTIQUE_ID
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: GOOGLE_CLIENT_ID
+                  optional: true
+            - name: FACEBOOK_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: FACEBOOK_APP_ID
+                  optional: true
           readinessProbe:
             httpGet:
               path: /api/health

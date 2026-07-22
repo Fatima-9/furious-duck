@@ -68,7 +68,42 @@ function validateLoginPayload(body) {
   };
 }
 
+function validateOAuthPayload(body) {
+  validateRequiredString(body.provider, "provider");
+  validateRequiredString(body.token, "token");
+
+  const provider = body.provider.trim().toLowerCase();
+
+  if (!["google", "facebook"].includes(provider)) {
+    throw new ApiError(400, "provider must be google or facebook");
+  }
+
+  const payload = {
+    provider,
+    token: body.token.trim(),
+  };
+
+  if (body.role_id !== undefined) {
+    if (!Number.isInteger(Number(body.role_id))) {
+      throw new ApiError(400, "role_id must be an integer");
+    }
+
+    payload.role_id = Number(body.role_id);
+  }
+
+  if (body.boutique_id !== undefined) {
+    if (!Number.isInteger(Number(body.boutique_id))) {
+      throw new ApiError(400, "boutique_id must be an integer");
+    }
+
+    payload.boutique_id = Number(body.boutique_id);
+  }
+
+  return payload;
+}
+
 module.exports = {
   validateRegisterPayload,
   validateLoginPayload,
+  validateOAuthPayload,
 };

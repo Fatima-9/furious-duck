@@ -1,6 +1,7 @@
 const {
   validateRegisterPayload,
   validateLoginPayload,
+  validateOAuthPayload,
 } = require("../../validations/authValidation");
 
 describe("authValidation", () => {
@@ -45,5 +46,30 @@ describe("authValidation", () => {
         boutique_id: 1,
       })
     ).toThrow("mot_de_passe must contain at least 8 characters");
+  });
+
+  test("normalizes a valid oauth payload", () => {
+    const payload = validateOAuthPayload({
+      provider: " Google ",
+      token: " token-value ",
+      role_id: "1",
+      boutique_id: "2",
+    });
+
+    expect(payload).toEqual({
+      provider: "google",
+      token: "token-value",
+      role_id: 1,
+      boutique_id: 2,
+    });
+  });
+
+  test("rejects an unknown oauth provider", () => {
+    expect(() =>
+      validateOAuthPayload({
+        provider: "github",
+        token: "token-value",
+      })
+    ).toThrow("provider must be google or facebook");
   });
 });

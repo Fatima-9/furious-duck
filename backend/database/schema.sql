@@ -28,13 +28,20 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
   statut VARCHAR(50) NOT NULL DEFAULT 'actif',
   role_id INTEGER NOT NULL REFERENCES roles(id_role),
   boutique_id INTEGER NOT NULL REFERENCES boutiques(id_boutique),
+  oauth_provider VARCHAR(50),
+  oauth_subject VARCHAR(255),
   reset_token_hash VARCHAR(255),
   reset_token_expires TIMESTAMP
 );
 
 -- Pour les bases déjà créées avant l'ajout de la réinitialisation de mot de passe
+ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(50);
+ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS oauth_subject VARCHAR(255);
 ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS reset_token_hash VARCHAR(255);
 ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_utilisateurs_oauth_identity
+  ON utilisateurs(oauth_provider, oauth_subject)
+  WHERE oauth_provider IS NOT NULL AND oauth_subject IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS campagnes (
   id_campagne SERIAL PRIMARY KEY,
