@@ -18,6 +18,7 @@ Le projet peut etre lance avec Docker Compose ou directement avec npm en mode de
 - [URLs de test](#urls-de-test)
 - [API Authentification](#api-authentification)
 - [API Profil](#api-profil)
+- [API Tickets et participation](#api-tickets-et-participation)
 - [Commandes utiles](#commandes-utiles)
 - [Depannage](#depannage)
 
@@ -371,6 +372,71 @@ PATCH /api/users/me/password
 ```
 
 Le mot de passe actuel est exige en plus du jeton. Un jeton vole ne suffit donc pas pour prendre le controle d'un compte.
+
+## API Tickets et participation
+
+### Generer les tickets du jeu-concours
+
+La commande suivante cree une campagne, les 5 gains et les tickets associes :
+
+```bash
+cd backend
+npm run tickets:generate
+```
+
+Par defaut, elle genere `500000` tickets avec la repartition demandee :
+
+- 60% infuseur a the
+- 20% boite de 100g de the detox ou infusion
+- 10% boite de 100g de the signature
+- 6% coffret decouverte 39 euros
+- 4% coffret decouverte 69 euros
+
+Pour tester avec un petit volume :
+
+```bash
+npm run tickets:generate -- --total=100
+```
+
+Options disponibles :
+
+```text
+--total=500000
+--name="The Tip Top - Jeu concours"
+--start=2026-08-01
+--end=2026-08-30
+--claim-end=2026-09-29
+```
+
+### Verifier un ticket
+
+```text
+GET /api/tickets/:code/verify
+```
+
+Cette route ne consomme pas le ticket. Elle indique seulement s'il existe et s'il peut etre utilise.
+
+### Participer avec un ticket
+
+```text
+POST /api/tickets/:code/participate
+```
+
+Cette route exige un jeton :
+
+```text
+Authorization: Bearer VOTRE_JETON
+```
+
+Elle associe le ticket a l'utilisateur connecte, marque le ticket comme utilise, empeche sa reutilisation et retourne le gain obtenu.
+
+### Historique de mes gains
+
+```text
+GET /api/tickets/me/history
+```
+
+Cette route exige un jeton et retourne la liste des tickets deja utilises par l'utilisateur connecte avec leurs gains.
 
 ## Commandes utiles
 
