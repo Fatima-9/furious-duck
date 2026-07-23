@@ -11,8 +11,6 @@ describe("authValidation", () => {
       prenom: " Furious ",
       email: " USER@Example.COM ",
       password: "Password123!",
-      role_id: "1",
-      boutique_id: "2",
     });
 
     expect(payload).toMatchObject({
@@ -20,8 +18,6 @@ describe("authValidation", () => {
       prenom: "Furious",
       email: "user@example.com",
       mot_de_passe: "Password123!",
-      role_id: 1,
-      boutique_id: 2,
       type_inscription: "email",
     });
   });
@@ -42,25 +38,43 @@ describe("authValidation", () => {
         prenom: "Furious",
         email: "user@example.com",
         mot_de_passe: "short",
-        role_id: 1,
-        boutique_id: 1,
       })
     ).toThrow("mot_de_passe must contain at least 8 characters");
+  });
+
+  test("rejects a password without uppercase lowercase number and special character", () => {
+    const basePayload = {
+      nom: "Duck",
+      prenom: "Furious",
+      email: "user@example.com",
+    };
+
+    expect(() =>
+      validateRegisterPayload({ ...basePayload, mot_de_passe: "password123!" })
+    ).toThrow("mot_de_passe must contain at least one uppercase letter");
+
+    expect(() =>
+      validateRegisterPayload({ ...basePayload, mot_de_passe: "PASSWORD123!" })
+    ).toThrow("mot_de_passe must contain at least one lowercase letter");
+
+    expect(() =>
+      validateRegisterPayload({ ...basePayload, mot_de_passe: "Password!" })
+    ).toThrow("mot_de_passe must contain at least one number");
+
+    expect(() =>
+      validateRegisterPayload({ ...basePayload, mot_de_passe: "Password123" })
+    ).toThrow("mot_de_passe must contain at least one special character");
   });
 
   test("normalizes a valid oauth payload", () => {
     const payload = validateOAuthPayload({
       provider: " Google ",
       token: " token-value ",
-      role_id: "1",
-      boutique_id: "2",
     });
 
     expect(payload).toEqual({
       provider: "google",
       token: "token-value",
-      role_id: 1,
-      boutique_id: 2,
     });
   });
 

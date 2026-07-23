@@ -9,6 +9,7 @@ const router = express.Router();
 // depanner une boutique sans changer de compte.
 router.use(authenticate, authorize(ROLES.EMPLOYE_BOUTIQUE, ROLES.ADMIN));
 
+router.get("/participations", boutiqueController.listClientParticipations);
 router.get("/gains", boutiqueController.findGainsByWinner);
 router.get("/tickets/:code", boutiqueController.findGainByTicket);
 router.patch("/tickets/:code/remise", boutiqueController.markAsRemis);

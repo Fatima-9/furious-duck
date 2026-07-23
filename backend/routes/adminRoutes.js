@@ -1,5 +1,6 @@
 const express = require("express");
 const adminController = require("../controllers/adminController");
+const adminEmployeeController = require("../controllers/adminEmployeeController");
 const exportController = require("../controllers/exportController");
 const { authenticate, authorize } = require("../middlewares/authMiddleware");
 const { ROLES } = require("../config/roles");
@@ -14,6 +15,12 @@ router.get("/stats", adminController.getOverview);
 router.get("/stats/tickets", adminController.getTicketStats);
 router.get("/stats/gains", adminController.getGainStats);
 router.get("/stats/utilisateurs", adminController.getUserStats);
+
+router.get("/boutiques", adminEmployeeController.listBoutiques);
+router.get("/employees", adminEmployeeController.listEmployees);
+router.post("/employees", adminEmployeeController.createEmployee);
+router.patch("/employees/:id", adminEmployeeController.updateEmployee);
+router.delete("/employees/:id", adminEmployeeController.deleteEmployee);
 
 // Export des contacts pour l'emailing. ?format=csv pour un fichier importable
 // directement dans un outil de mailing.

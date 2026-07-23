@@ -3,6 +3,7 @@ jest.mock("../../config/db", () => ({
 }));
 
 const boutiqueService = require("../../services/boutiqueService");
+const { pool } = require("../../config/db");
 
 const HIER = new Date(Date.now() - 24 * 60 * 60 * 1000);
 const DEMAIN = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -76,5 +77,46 @@ describe("toGainView", () => {
     );
 
     expect(view.peut_etre_remis).toBe(false);
+  });
+});
+
+describe("listClientParticipations", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("returns paginated participations with filters", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ total: "23", lots_gagnes: "23", lots_retires: "8" }] })
+      .mockResolvedValueOnce({ rows: [buildRow()] });
+
+    const result = await boutiqueService.listClientParticipations({
+      page: "2",
+      limit: "10",
+      filters: { email: "marie", remis: "false" },
+    });
+
+    expect(result.pagination).toEqual({
+      page: 2,
+      limit: 10,
+      total: 23,
+      total_pages: 3,
+      has_previous: true,
+      has_next: true,
+    });
+    expect(result.stats).toEqual({
+      total_participations: 23,
+      lots_gagnes: 23,
+      lots_retires: 8,
+    });
+    expect(result.participations[0]).toMatchObject({
+      code_ticket: "ABCDEFGH12",
+      utilisateur: { email: "marie@example.com" },
+      gain: { libelle: "Infuseur a the" },
+    });
+    expect(pool.query).toHaveBeenLastCalledWith(
+      expect.stringContaining("LIMIT $3"),
+      ["%marie%", false, 10, 10]
+    );
   });
 });

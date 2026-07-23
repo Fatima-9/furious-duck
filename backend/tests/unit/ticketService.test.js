@@ -80,6 +80,17 @@ describe("ticketService", () => {
     });
   });
 
+  test("verifyTicket reports a missing ticket", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(ticketService.verifyTicket("ZZZZZZZZZZ")).resolves.toEqual({
+      code_ticket: "ZZZZZZZZZZ",
+      exists: false,
+      canParticipate: false,
+      reason: "not_found",
+    });
+  });
+
   test("participateWithTicket assigns the ticket and decrements remaining prizes", async () => {
     const client = {
       query: jest.fn(),

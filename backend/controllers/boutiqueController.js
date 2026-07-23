@@ -22,6 +22,19 @@ async function findGainsByWinner(req, res) {
   });
 }
 
+async function listClientParticipations(req, res) {
+  const result = await boutiqueService.listClientParticipations({
+    page: req.query.page,
+    limit: req.query.limit,
+    filters: req.query,
+  });
+
+  return res.json({
+    status: "success",
+    data: result,
+  });
+}
+
 async function markAsRemis(req, res) {
   const codeTicket = getTicketCodeFromRequest(req);
   const gain = await boutiqueService.markTicketAsRemis(
@@ -36,6 +49,7 @@ async function markAsRemis(req, res) {
 }
 
 module.exports = {
+  listClientParticipations,
   findGainByTicket,
   findGainsByWinner,
   markAsRemis,

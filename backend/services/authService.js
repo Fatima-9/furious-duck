@@ -41,6 +41,8 @@ async function register(payload) {
   const user = await Utilisateur.create({
     ...payload,
     mot_de_passe: hashedPassword,
+    role_id: resolveDefaultId(undefined, "DEFAULT_USER_ROLE_ID"),
+    boutique_id: resolveDefaultId(undefined, "DEFAULT_BOUTIQUE_ID"),
   });
 
   return {

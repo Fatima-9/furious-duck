@@ -77,6 +77,129 @@ function toGainView(row) {
   };
 }
 
+function normalizePositiveInteger(value, fallback, max = 100) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.min(parsed, max);
+}
+
+function buildParticipationFilters(filters = {}) {
+  const clauses = ["t.utilisateur_id IS NOT NULL"];
+  const values = [];
+
+  const textFilters = [
+    ["code_ticket", "t.code_ticket"],
+    ["email", "u.email"],
+    ["nom", "u.nom"],
+    ["prenom", "u.prenom"],
+    ["gain", "g.libelle"],
+    ["statut", "t.statut"],
+  ];
+
+  textFilters.forEach(([key, column]) => {
+    const value = filters[key];
+    if (typeof value === "string" && value.trim() !== "") {
+      values.push(`%${value.trim()}%`);
+      clauses.push(`${column} ILIKE $${values.length}`);
+    }
+  });
+
+  if (filters.remis === "true" || filters.remis === "false") {
+    values.push(filters.remis === "true");
+    clauses.push(`t.remis = $${values.length}`);
+  }
+
+  if (typeof filters.date_utilisation === "string" && filters.date_utilisation.trim() !== "") {
+    values.push(`${filters.date_utilisation.trim()}%`);
+    clauses.push(`CAST(t.date_utilisation AS TEXT) ILIKE $${values.length}`);
+  }
+
+  return {
+    where: clauses.join(" AND "),
+    values,
+  };
+}
+
+function toParticipationView(row) {
+  return {
+    id_ticket: row.id_ticket,
+    code_ticket: row.code_ticket,
+    statut: row.statut,
+    date_utilisation: row.date_utilisation,
+    remis: row.remis,
+    date_remise: row.date_remise,
+    gain: {
+      id_gain: row.id_gain,
+      libelle: row.gain_libelle,
+    },
+    utilisateur: {
+      id_user: row.id_user,
+      nom: row.user_nom,
+      prenom: row.user_prenom,
+      email: row.user_email,
+    },
+  };
+}
+
+async function listClientParticipations(options = {}) {
+  ensureDatabaseConfigured();
+
+  const page = normalizePositiveInteger(options.page, 1, 100000);
+  const limit = normalizePositiveInteger(options.limit, 10, 50);
+  const offset = (page - 1) * limit;
+  const { where, values } = buildParticipationFilters(options.filters);
+
+  const countResult = await pool.query(
+    `
+      SELECT
+        count(*) AS total,
+        count(*) AS lots_gagnes,
+        count(*) FILTER (WHERE t.remis) AS lots_retires
+      FROM tickets t
+      JOIN gains g ON g.id_gain = t.gain_id
+      JOIN utilisateurs u ON u.id_user = t.utilisateur_id
+      WHERE ${where}
+    `,
+    values
+  );
+
+  const result = await pool.query(
+    `
+      ${GAIN_SELECT}
+      WHERE ${where}
+      ORDER BY t.date_utilisation DESC, t.id_ticket DESC
+      LIMIT $${values.length + 1}
+      OFFSET $${values.length + 2}
+    `,
+    [...values, limit, offset]
+  );
+
+  const countRow = countResult.rows[0] || {};
+  const total = Number(countRow.total || 0);
+  const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+  return {
+    participations: result.rows.map(toParticipationView),
+    stats: {
+      total_participations: total,
+      lots_gagnes: Number(countRow.lots_gagnes || 0),
+      lots_retires: Number(countRow.lots_retires || 0),
+    },
+    pagination: {
+      page,
+      limit,
+      total,
+      total_pages: totalPages,
+      has_previous: page > 1,
+      has_next: page < totalPages,
+    },
+  };
+}
+
 async function findGainByTicketCode(codeTicket) {
   ensureDatabaseConfigured();
 
@@ -173,9 +296,11 @@ async function markTicketAsRemis(codeTicket, employeId) {
 }
 
 module.exports = {
+  listClientParticipations,
   findGainByTicketCode,
   findGainsByWinner,
   markTicketAsRemis,
   toGainView,
+  toParticipationView,
   isClaimPeriodOver,
 };

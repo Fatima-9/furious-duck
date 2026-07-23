@@ -25,6 +25,22 @@ function validatePassword(password) {
   if (password.length < 8) {
     throw new ApiError(400, "mot_de_passe must contain at least 8 characters");
   }
+
+  if (!/[A-Z]/.test(password)) {
+    throw new ApiError(400, "mot_de_passe must contain at least one uppercase letter");
+  }
+
+  if (!/[a-z]/.test(password)) {
+    throw new ApiError(400, "mot_de_passe must contain at least one lowercase letter");
+  }
+
+  if (!/[0-9]/.test(password)) {
+    throw new ApiError(400, "mot_de_passe must contain at least one number");
+  }
+
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    throw new ApiError(400, "mot_de_passe must contain at least one special character");
+  }
 }
 
 function validateRegisterPayload(body) {
@@ -35,14 +51,6 @@ function validateRegisterPayload(body) {
   const password = getPassword(body);
   validatePassword(password);
 
-  if (!Number.isInteger(Number(body.role_id))) {
-    throw new ApiError(400, "role_id is required");
-  }
-
-  if (!Number.isInteger(Number(body.boutique_id))) {
-    throw new ApiError(400, "boutique_id is required");
-  }
-
   return {
     nom: body.nom.trim(),
     prenom: body.prenom.trim(),
@@ -51,8 +59,6 @@ function validateRegisterPayload(body) {
     date_de_naissance: body.date_de_naissance,
     sexe: body.sexe,
     type_inscription: body.type_inscription || "email",
-    role_id: Number(body.role_id),
-    boutique_id: Number(body.boutique_id),
   };
 }
 
@@ -78,32 +84,17 @@ function validateOAuthPayload(body) {
     throw new ApiError(400, "provider must be google or facebook");
   }
 
-  const payload = {
+  return {
     provider,
     token: body.token.trim(),
   };
-
-  if (body.role_id !== undefined) {
-    if (!Number.isInteger(Number(body.role_id))) {
-      throw new ApiError(400, "role_id must be an integer");
-    }
-
-    payload.role_id = Number(body.role_id);
-  }
-
-  if (body.boutique_id !== undefined) {
-    if (!Number.isInteger(Number(body.boutique_id))) {
-      throw new ApiError(400, "boutique_id must be an integer");
-    }
-
-    payload.boutique_id = Number(body.boutique_id);
-  }
-
-  return payload;
 }
 
 module.exports = {
   validateRegisterPayload,
   validateLoginPayload,
   validateOAuthPayload,
+  validateEmail,
+  validatePassword,
+  validateRequiredString,
 };

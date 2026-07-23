@@ -35,8 +35,8 @@ describe("authService", () => {
       prenom: "Furious",
       email: "user@example.com",
       mot_de_passe: "Password123!",
-      role_id: 1,
-      boutique_id: 1,
+      role_id: 2,
+      boutique_id: 3,
     });
 
     expect(result.token).toEqual(expect.any(String));
@@ -45,6 +45,8 @@ describe("authService", () => {
       expect.objectContaining({
         email: "user@example.com",
         mot_de_passe: expect.not.stringMatching("Password123!"),
+        role_id: 1,
+        boutique_id: 1,
       })
     );
   });
