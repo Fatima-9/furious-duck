@@ -9,11 +9,11 @@ export default function Footer() {
       <div className="ttt-footer-grid">
         <div>
           <div className="ttt-footer-brand">
-            <img src={logoEmblemLight} alt="Thé Tip Top" />
-            <span>Thé Tip Top</span>
+            <img src={logoEmblemLight} alt="The Tip Top" />
+            <span>The Tip Top</span>
           </div>
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, maxWidth: 280 }}>
-            Maison de thé bio. Jeu-concours 100 % gagnant pour célébrer l'ouverture de nos 60 boutiques.
+            Maison de the bio. Jeu-concours 100 % gagnant pour celebrer l'ouverture de nos 60 boutiques.
           </p>
         </div>
         <div>
@@ -30,22 +30,22 @@ export default function Footer() {
           <div className="ttt-footer-links">
             <Link to={ROUTES.contact}>Contact</Link>
             <Link to={ROUTES.profile}>Mon espace</Link>
-            <Link to={ROUTES.auth}>Connexion</Link>
+            <Link to={ROUTES.auth}>Connexion / inscription</Link>
           </div>
         </div>
         <div>
-          <div className="ttt-footer-heading">Légal</div>
+          <div className="ttt-footer-heading">Legal</div>
           <div className="ttt-footer-links">
-            <Link to={ROUTES.legal}>Règlement du jeu</Link>
-            <Link to={ROUTES.legal}>Mentions légales</Link>
-            <Link to={ROUTES.legal}>Confidentialité (RGPD)</Link>
+            <Link to={ROUTES.legal}>Reglement du jeu</Link>
+            <Link to={ROUTES.legal}>Mentions legales</Link>
+            <Link to={ROUTES.legal}>Confidentialite (RGPD)</Link>
             <Link to={ROUTES.legal}>Cookies</Link>
           </div>
         </div>
       </div>
       <div className="ttt-footer-bottom">
-        <span>© 2026 Thé Tip Top — Tous droits réservés.</span>
-        <span>Jeu sans obligation d'achat · Bio · Fabriqué en France</span>
+        <span>2026 The Tip Top - Tous droits reserves.</span>
+        <span>Jeu sans obligation d'achat - Bio - Fabrique en France</span>
       </div>
     </footer>
   );

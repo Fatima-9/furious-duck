@@ -1,91 +1,127 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
 import ProgressBar from '../components/ui/ProgressBar';
+import Button from '../components/ui/Button';
+import { useAuth } from '../context/useAuth';
+import { useGame } from '../context/useGame';
+import { getMyGainHistory } from '../services/api';
+import { ROUTES } from '../routes';
+import { canParticipate, getRoleDisplayName } from '../utils/roles';
 
-const MONTHS = [
-  { label: 'Jan', height: 34, color: 'var(--border-strong)' },
-  { label: 'Fév', height: 58, color: 'var(--green2)' },
-  { label: 'Mar', height: 46, color: 'var(--green2)' },
-  { label: 'Avr', height: 76, color: 'var(--green)' },
-  { label: 'Mai', height: 62, color: 'var(--green)' },
-  { label: 'Juin', height: 100, gold: true },
-];
-
-const LOT_SPLIT = [
-  { label: 'Infuseurs', count: 3, pct: 43, color: 'var(--green3)' },
-  { label: 'Détox', count: 2, pct: 29, color: 'var(--green)' },
-  { label: 'Coffrets', count: 1, pct: 14, color: 'var(--green2)' },
-  { label: 'Signature', count: 1, pct: 14, color: 'var(--gold)' },
-];
+function getMonthKey(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
 
 export default function Stats() {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+  const { fireToast } = useGame();
+  const [history, setHistory] = useState(null);
+  const userCanParticipate = isAuthenticated && canParticipate(user);
+
+  useEffect(() => {
+    if (!userCanParticipate) return;
+
+    getMyGainHistory()
+      .then(setHistory)
+      .catch((error) => fireToast(error.message));
+  }, [fireToast, userCanParticipate]);
+
+  const gains = useMemo(() => history || [], [history]);
+  const remis = gains.filter((item) => item.remis).length;
+  const aRetirer = gains.length - remis;
+  const tauxRetrait = gains.length ? Math.round((remis / gains.length) * 100) : 0;
+  const currentMonth = getMonthKey(new Date());
+  const codesCeMois = gains.filter((item) => getMonthKey(item.date_utilisation) === currentMonth).length;
+
+  const split = useMemo(() => {
+    const counts = new Map();
+    gains.forEach((item) => {
+      const label = item.gain?.libelle || 'Autre';
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+
+    return [...counts.entries()].map(([label, count]) => ({
+      label,
+      count,
+      pct: gains.length ? Math.round((count / gains.length) * 100) : 0,
+    }));
+  }, [gains]);
+
+  const bestPrize = split.slice().sort((a, b) => b.count - a.count)[0]?.label || '-';
+  const lastParticipation = gains[0];
+
+  if (isAuthenticated && !userCanParticipate) {
+    return (
+      <section className="ttt-section" style={{ paddingTop: 80, paddingBottom: 120, textAlign: 'center' }}>
+        <div className="ttt-eyebrow">Acces reserve aux clients</div>
+        <h1 style={{ fontWeight: 600, fontSize: 'clamp(32px,4.5vw,48px)', margin: '0 0 16px' }}>
+          Ce compte n'a pas de statistiques de participation.
+        </h1>
+        <p style={{ maxWidth: 560, margin: '0 auto 24px', color: 'var(--muted)', lineHeight: 1.7 }}>
+          Vous etes connecte avec un compte {getRoleDisplayName(user).toLowerCase()}. Les statistiques personnelles existent uniquement pour les comptes clients.
+        </p>
+        <Button variant="solid" onClick={() => navigate(ROUTES.profile)}>
+          Retourner a mon espace
+        </Button>
+      </section>
+    );
+  }
+
   return (
     <section className="ttt-section" style={{ paddingTop: 48, paddingBottom: 80 }}>
       <div style={{ marginBottom: 30 }}>
         <div className="ttt-eyebrow">Mon suivi</div>
-        <h1 style={{ fontWeight: 600, fontSize: 'clamp(32px,4.5vw,48px)', margin: 0 }}>Statistiques de participation.</h1>
+        <h1 style={{ fontWeight: 600, fontSize: 'clamp(32px,4.5vw,48px)', margin: 0 }}>Mes statistiques de participation.</h1>
       </div>
 
       <div className="ttt-auto-fit-160" style={{ marginBottom: 22 }}>
-        <StatCard label="Total participations" value="7" />
-        <StatCard label="Taux de retrait" value="86%" />
-        <StatCard label="Meilleur lot" value="Signature" valueStyle={{ fontSize: 24, marginTop: 6 }} />
-        <StatCard label="Codes ce mois" value="2" />
+        <StatCard label="Total participations" value={gains.length} />
+        <StatCard label="Taux de retrait" value={`${tauxRetrait}%`} />
+        <StatCard label="Meilleur lot" value={bestPrize} valueStyle={{ fontSize: 20, marginTop: 6 }} />
+        <StatCard label="Codes ce mois" value={codesCeMois} />
       </div>
 
       <div className="ttt-cols-stats" style={{ marginBottom: 22 }}>
         <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 22 }}>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>Participations sur 6 mois</div>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>Jan → Juin</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, height: 150 }}>
-            {MONTHS.map((m) => (
-              <div key={m.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                <div
-                  style={{
-                    width: '100%',
-                    maxWidth: 38,
-                    height: `${m.height}%`,
-                    background: m.gold ? 'linear-gradient(180deg,#D2B95F,var(--gold))' : m.color,
-                    borderRadius: '7px 7px 0 0',
-                    boxShadow: m.gold ? '0 6px 16px -8px rgba(196,168,78,.8)' : 'none',
-                  }}
-                />
-                <span style={{ fontSize: 11, color: m.gold ? 'var(--ink)' : 'var(--muted)', fontWeight: m.gold ? 700 : 400 }}>{m.label}</span>
-              </div>
-            ))}
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 18 }}>Etat de mes codes</div>
+          <ProgressBar label="Recuperes" value={remis} total={Math.max(gains.length, 1)} color="var(--success)" delay={0.1} />
+          <ProgressBar label="A retirer" value={aRetirer} total={Math.max(gains.length, 1)} color="var(--warn)" delay={0.2} />
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)', fontSize: 12.5, color: 'var(--muted)' }}>
+            Derniere participation
+            <br />
+            <span style={{ color: 'var(--ink)', fontWeight: 700, fontSize: 13.5 }}>
+              {lastParticipation ? lastParticipation.code_ticket : history ? 'Aucune participation' : 'Chargement...'}
+            </span>
           </div>
         </Card>
+
         <Card>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 18 }}>État de mes codes</div>
-          <ProgressBar label="Récupérés" value={6} total={7} color="var(--success)" delay={0.1} />
-          <ProgressBar label="À retirer" value={1} total={7} color="var(--warn)" delay={0.2} />
-          <ProgressBar label="Expirés" value={0} total={7} color="var(--muted)" delay={0.3} />
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)', fontSize: 12.5, color: 'var(--muted)' }}>
-            Dernière participation
-            <br />
-            <span style={{ color: 'var(--ink)', fontWeight: 700, fontSize: 13.5 }}>Il y a 3 jours · TTT-9F4K-21</span>
-          </div>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 18 }}>Repartition de mes lots</div>
+          {split.length === 0 ? (
+            <div style={{ fontSize: 13.5, color: 'var(--muted)' }}>{history ? 'Aucun lot pour le moment.' : 'Chargement...'}</div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', height: 26, borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
+                {split.map((item, index) => (
+                  <div key={item.label} style={{ width: `${item.pct}%`, background: index % 2 ? 'var(--green)' : 'var(--gold)' }} />
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, fontSize: 13 }}>
+                {split.map((item) => (
+                  <span key={item.label}>
+                    {item.label} - {item.count}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </Card>
       </div>
-
-      <Card>
-        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 18 }}>Répartition de mes lots</div>
-        <div style={{ display: 'flex', height: 26, borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
-          {LOT_SPLIT.map((s) => (
-            <div key={s.label} style={{ width: `${s.pct}%`, background: s.color }} />
-          ))}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, fontSize: 13 }}>
-          {LOT_SPLIT.map((s) => (
-            <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ width: 11, height: 11, borderRadius: 3, background: s.color }} />
-              {s.label} · {s.count}
-            </span>
-          ))}
-        </div>
-      </Card>
     </section>
   );
 }

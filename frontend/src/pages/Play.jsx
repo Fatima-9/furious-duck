@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
+import { useAuth } from '../context/useAuth';
 import { useGame } from '../context/useGame';
 import Button from '../components/ui/Button';
 import PrizeWheel from '../components/wheel/PrizeWheel';
+import { canParticipate, getRoleDisplayName } from '../utils/roles';
 
 function Step({ state, label, num }) {
   const done = state === 'done';
@@ -24,7 +26,7 @@ function Step({ state, label, num }) {
           boxShadow: active ? '0 0 0 4px var(--success-bg)' : 'none',
         }}
       >
-        {done ? '✓' : num}
+        {done ? 'OK' : num}
       </span>
       <span style={{ fontSize: 11, color: active ? 'var(--ink)' : 'var(--muted)', fontWeight: active ? 700 : 400 }}>{label}</span>
     </div>
@@ -33,13 +35,31 @@ function Step({ state, label, num }) {
 
 export default function Play() {
   const navigate = useNavigate();
-  const { code, setCode, codeValid, isSpinning, hasWon, prize, resetDraw } = useGame();
+  const { isAuthenticated, user } = useAuth();
+  const { code, setCode, codeHasValidFormat, codeValid, ticketCheck, isSpinning, hasWon, prize, resetDraw } = useGame();
+  const userCanParticipate = isAuthenticated && canParticipate(user);
+
+  if (isAuthenticated && !userCanParticipate) {
+    return (
+      <section className="ttt-section" style={{ paddingTop: 80, paddingBottom: 120, textAlign: 'center' }}>
+        <div className="ttt-eyebrow">Acces reserve aux clients</div>
+        <h1 style={{ fontWeight: 600, fontSize: 'clamp(32px,4.5vw,52px)', margin: '0 0 16px' }}>
+          Ce compte ne peut pas participer au jeu.
+        </h1>
+        <p style={{ maxWidth: 560, margin: '0 auto 24px', color: 'var(--muted)', lineHeight: 1.7 }}>
+          Vous etes connecte avec un compte {getRoleDisplayName(user).toLowerCase()}. Seuls les comptes clients peuvent saisir un code et tenter leur chance.
+        </p>
+        <Button variant="solid" onClick={() => navigate(ROUTES.profile)}>
+          Retourner a mon espace
+        </Button>
+      </section>
+    );
+  }
 
   return (
     <section className="ttt-section" style={{ paddingTop: 56, paddingBottom: 20 }}>
-      {/* stepper */}
       <div style={{ display: 'flex', alignItems: 'center', maxWidth: 560, margin: '0 auto 44px' }}>
-        <Step state="done" label="Compte" num="✓" />
+        <Step state="done" label="Compte" num="1" />
         <div style={{ height: 2, flex: 1, background: 'var(--green)', margin: '0 6px 22px' }} />
         <Step state="active" label="Tirage" num="2" />
         <div style={{ height: 2, flex: 1, background: 'var(--border-strong)', margin: '0 6px 22px' }} />
@@ -51,7 +71,6 @@ export default function Play() {
         <h1 style={{ fontWeight: 600, fontSize: 'clamp(32px,4.5vw,52px)', margin: 0 }}>La roue des lots.</h1>
       </div>
 
-      {/* WHEEL STAGE */}
       <div
         style={{
           position: 'relative',
@@ -72,23 +91,20 @@ export default function Play() {
           <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: 410, minWidth: 270, color: '#fff' }}>
             {hasWon ? (
               <div style={{ position: 'relative', animation: 'ttt-scalein .5s cubic-bezier(.2,.8,.2,1) both' }}>
-                <span aria-hidden="true" style={{ position: 'absolute', top: -6, left: '8%', '--dx': '-34px', '--dy': '-40px', width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)', animation: 'ttt-spark 1s .1s ease-out both' }} />
-                <span aria-hidden="true" style={{ position: 'absolute', top: -10, left: '40%', '--dx': '10px', '--dy': '-48px', width: 6, height: 6, borderRadius: '50%', background: 'var(--gold-soft)', animation: 'ttt-spark 1.1s .05s ease-out both' }} />
-                <span aria-hidden="true" style={{ position: 'absolute', top: -4, left: '64%', '--dx': '38px', '--dy': '-38px', width: 9, height: 9, borderRadius: '50%', background: 'var(--gold)', animation: 'ttt-spark 1s .15s ease-out both' }} />
                 <div style={{ display: 'inline-block', fontSize: 11, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--green3)', background: 'var(--gold)', padding: '5px 14px', borderRadius: 99, fontWeight: 800, marginBottom: 14 }}>
                   {prize?.tier}
                 </div>
-                <div style={{ fontSize: 14, color: 'rgba(255,255,255,.62)' }}>Félicitations, vous avez gagné</div>
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,.62)' }}>Felicitations, vous avez gagne</div>
                 <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(34px,5vw,50px)', color: '#fff', lineHeight: 1.04, margin: '6px 0 8px' }}>
                   {prize?.name}
                 </div>
                 <div style={{ color: 'var(--gold-soft)', fontSize: 17, fontWeight: 700, marginBottom: 26 }}>{prize?.value}</div>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   <Button variant="gold" onClick={() => navigate(ROUTES.result)}>
-                    Voir mon lot →
+                    Voir mon lot
                   </Button>
                   <Button variant="outline-light" onClick={resetDraw}>
-                    ↺ Rejouer
+                    Rejouer
                   </Button>
                 </div>
               </div>
@@ -112,7 +128,7 @@ export default function Play() {
                   <input
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="TTT-XXXX-99"
+                    placeholder="AB12CD34EF"
                     maxLength={10}
                     style={{
                       flex: 1,
@@ -127,27 +143,25 @@ export default function Play() {
                       textTransform: 'uppercase',
                     }}
                   />
-                  {codeValid && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ flex: '0 0 auto', animation: 'ttt-scalein .3s both' }}>
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  )}
+                  {ticketCheck.status === 'checking' && <span style={{ color: 'var(--gold)', fontWeight: 800 }}>...</span>}
+                  {ticketCheck.status === 'valid' && <span style={{ color: 'var(--gold)', fontWeight: 800 }}>OK</span>}
                 </div>
                 <div style={{ minHeight: 20, fontSize: 12.5, marginBottom: 18 }}>
-                  {codeValid && <span style={{ color: '#8FCBA6', fontWeight: 700 }}>✓ Code valide — cliquez sur le cœur de la roue.</span>}
+                  {!codeHasValidFormat && code && <span style={{ color: 'var(--gold-soft)', fontWeight: 700 }}>Le code doit contenir 10 caracteres.</span>}
+                  {ticketCheck.status === 'checking' && <span style={{ color: 'var(--gold-soft)', fontWeight: 700 }}>Verification du code en base...</span>}
+                  {ticketCheck.status === 'invalid' && <span style={{ color: '#F4A6A6', fontWeight: 700 }}>{ticketCheck.message}</span>}
+                  {codeValid && <span style={{ color: '#8FCBA6', fontWeight: 700 }}>{ticketCheck.message}</span>}
                 </div>
+                {!isAuthenticated && (
+                  <p style={{ margin: '0 0 12px', fontSize: 13.5, color: 'var(--gold-soft)', lineHeight: 1.6 }}>
+                    Connectez-vous avant de lancer la roue.
+                  </p>
+                )}
                 <p style={{ margin: 0, fontSize: 13.5, color: 'rgba(255,255,255,.6)', lineHeight: 1.6 }}>
-                  Le tirage est réalisé côté serveur. Résultat instantané, 100 % gagnant.
+                  Le tirage est realise cote serveur. Resultat instantane, 100 % gagnant.
                 </p>
                 <div style={{ minHeight: 22, marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--gold-soft)', fontWeight: 700 }}>
-                  {isSpinning && (
-                    <span style={{ display: 'inline-flex', gap: 5 }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)', animation: 'ttt-pulse 1s infinite' }} />
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)', animation: 'ttt-pulse 1s .2s infinite' }} />
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)', animation: 'ttt-pulse 1s .4s infinite' }} />
-                      &nbsp;La roue tourne…
-                    </span>
-                  )}
+                  {isSpinning && <span>Verification du ticket et tirage...</span>}
                 </div>
               </div>
             )}
@@ -161,7 +175,7 @@ export default function Play() {
         </a>{' '}
         ou le{' '}
         <a onClick={() => navigate(ROUTES.legal)} style={{ color: 'var(--green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>
-          règlement
+          reglement
         </a>
         .
       </p>

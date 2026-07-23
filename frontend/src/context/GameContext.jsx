@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { PRIZES, SEGMENT_TO_PRIZE } from '../data/prizes';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getPrizeFromGainLabel, getSegmentIndexForPrize } from '../data/prizes';
 import { GameContext } from './gameContextInstance';
+import { participateWithTicket, verifyTicket } from '../services/api';
 
-const SEGMENT_ANGLE = 45; // 360 / 8 segments
+const SEGMENT_ANGLE = 45;
 const FULL_TURNS = 5;
-const SPIN_DURATION = 4.4; // seconds
+const SPIN_DURATION = 4.4;
 const REDUCED_SPIN_DURATION = 0.7;
 
 function prefersReducedMotion() {
@@ -14,7 +15,8 @@ function prefersReducedMotion() {
 
 export function GameProvider({ children }) {
   const [code, setCodeRaw] = useState('');
-  const [drawState, setDrawState] = useState('idle'); // idle | spinning | won
+  const [drawState, setDrawState] = useState('idle');
+  const [ticketCheck, setTicketCheck] = useState({ status: 'idle', ticket: null, message: '' });
   const [prize, setPrize] = useState(null);
   const [rotation, setRotation] = useState(0);
   const [spinDuration, setSpinDuration] = useState(SPIN_DURATION);
@@ -31,19 +33,81 @@ export function GameProvider({ children }) {
   const hideToast = useCallback(() => setToastMsg(''), []);
 
   const setCode = useCallback((value) => {
-    setCodeRaw(value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
+    const nextCode = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    setCodeRaw(nextCode);
+    setTicketCheck({
+      status: nextCode.length === 0 ? 'idle' : nextCode.length < 10 ? 'format_incomplete' : 'checking',
+      ticket: null,
+      message: '',
+    });
+    setDrawState((current) => (current === 'won' ? 'idle' : current));
+    setPrize(null);
   }, []);
 
-  const codeValid = (code || '').replace(/[^A-Z0-9]/gi, '').length >= 8;
+  const codeHasValidFormat = (code || '').replace(/[^A-Z0-9]/gi, '').length === 10;
+  const codeValid = codeHasValidFormat && ticketCheck.status === 'valid';
 
-  const spin = useCallback(() => {
+  useEffect(() => {
+    if (!codeHasValidFormat) {
+      return undefined;
+    }
+
+    let active = true;
+    const timer = setTimeout(() => {
+      setTicketCheck({ status: 'checking', ticket: null, message: 'Verification du code...' });
+
+      verifyTicket(code)
+        .then((ticket) => {
+          if (!active) return;
+
+          if (!ticket.exists) {
+            setTicketCheck({ status: 'invalid', ticket, message: "Ce code n'existe pas." });
+            return;
+          }
+
+          if (!ticket.canParticipate) {
+            const message = ticket.reason === 'already_used'
+              ? 'Ce code a deja ete utilise.'
+              : "Ce code ne peut pas etre utilise pour le moment.";
+            setTicketCheck({ status: 'invalid', ticket, message });
+            return;
+          }
+
+          setTicketCheck({ status: 'valid', ticket, message: 'Code trouve en base, vous pouvez tourner la roue.' });
+        })
+        .catch((error) => {
+          if (!active) return;
+          setTicketCheck({ status: 'invalid', ticket: null, message: error.message });
+        });
+    }, 350);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [code, codeHasValidFormat]);
+
+  const spin = useCallback(async () => {
     if (drawState === 'spinning') return;
     if (!codeValid) {
-      fireToast('Saisissez un code de 8 caractères pour lancer la roue.');
+      fireToast(codeHasValidFormat ? ticketCheck.message || 'Ce code est invalide.' : 'Saisissez un code de 10 caracteres pour lancer la roue.');
       return;
     }
+
+    setDrawState('spinning');
+
+    let ticket;
+    try {
+      ticket = await participateWithTicket(code);
+    } catch (error) {
+      setDrawState('idle');
+      fireToast(error.message);
+      return;
+    }
+
     const reduce = prefersReducedMotion();
-    const idx = Math.floor(Math.random() * 8);
+    const won = getPrizeFromGainLabel(ticket?.gain?.libelle);
+    const idx = getSegmentIndexForPrize(won);
     const centerAngle = idx * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
     const jitter = (Math.random() * 2 - 1) * 14;
     const targetMod = (((360 - centerAngle - jitter) % 360) + 360) % 360;
@@ -55,15 +119,16 @@ export function GameProvider({ children }) {
 
     setSpinDuration(dur);
     setRotation(nextRotation);
-    setDrawState('spinning');
 
-    const won = PRIZES[SEGMENT_TO_PRIZE[idx]];
     clearTimeout(spinTimer.current);
     spinTimer.current = setTimeout(() => {
-      setPrize(won);
+      setPrize({
+        ...won,
+        ticket,
+      });
       setDrawState('won');
     }, dur * 1000 + 160);
-  }, [codeValid, drawState, fireToast, rotation]);
+  }, [code, codeHasValidFormat, codeValid, drawState, fireToast, rotation, ticketCheck.message]);
 
   const resetDraw = useCallback(() => {
     setDrawState('idle');
@@ -75,6 +140,8 @@ export function GameProvider({ children }) {
       code,
       setCode,
       codeValid,
+      codeHasValidFormat,
+      ticketCheck,
       drawState,
       isSpinning: drawState === 'spinning',
       hasWon: drawState === 'won',
@@ -88,7 +155,7 @@ export function GameProvider({ children }) {
       fireToast,
       hideToast,
     }),
-    [code, setCode, codeValid, drawState, prize, rotation, spinDuration, spin, resetDraw, toastMsg, fireToast, hideToast]
+    [code, setCode, codeValid, codeHasValidFormat, ticketCheck, drawState, prize, rotation, spinDuration, spin, resetDraw, toastMsg, fireToast, hideToast]
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

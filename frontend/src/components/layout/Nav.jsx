@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../routes';
+import { useAuth } from '../../context/useAuth';
 import Button from '../ui/Button';
 import logoEmblem from '../../assets/brand/logo-emblem-t.png';
 import './layout.css';
@@ -20,6 +21,13 @@ function linkClass({ isActive }) {
 export default function Nav() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, signOut, user } = useAuth();
+
+  function logout() {
+    signOut();
+    setOpen(false);
+    navigate(ROUTES.home);
+  }
 
   return (
     <nav className="ttt-nav">
@@ -37,15 +45,20 @@ export default function Nav() {
       </div>
 
       <div className="ttt-nav-actions">
-        <NavLink to={ROUTES.auth} className="nav-link" style={{ color: 'var(--muted)' }}>
-          Connexion
-        </NavLink>
-        <NavLink to={ROUTES.profile} title="Mon espace" className="ttt-nav-avatar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
-          </svg>
-        </NavLink>
+        {isAuthenticated ? (
+          <>
+            <button type="button" className="nav-link" style={{ color: 'var(--muted)', background: 'transparent', border: 'none' }} onClick={logout}>
+              Deconnexion
+            </button>
+            <NavLink to={ROUTES.profile} title="Mon espace" className="ttt-nav-avatar">
+              {(user?.prenom || user?.email || 'U').charAt(0).toUpperCase()}
+            </NavLink>
+          </>
+        ) : (
+          <NavLink to={ROUTES.auth} className="nav-link" style={{ color: 'var(--muted)' }}>
+            Connexion / inscription
+          </NavLink>
+        )}
         <Button variant="solid" size="md" onClick={() => navigate(ROUTES.play)}>
           Participer
         </Button>
@@ -69,12 +82,20 @@ export default function Nav() {
               {item.label}
             </NavLink>
           ))}
-          <NavLink to={ROUTES.auth} onClick={() => setOpen(false)}>
-            Connexion
-          </NavLink>
-          <NavLink to={ROUTES.profile} onClick={() => setOpen(false)}>
-            Mon espace
-          </NavLink>
+          {isAuthenticated ? (
+            <>
+              <NavLink to={ROUTES.profile} onClick={() => setOpen(false)}>
+                Mon espace
+              </NavLink>
+              <button type="button" onClick={logout} style={{ background: 'transparent', border: 'none', textAlign: 'left', padding: '12px 4px', color: 'var(--ink-soft)', fontWeight: 700 }}>
+                Deconnexion
+              </button>
+            </>
+          ) : (
+            <NavLink to={ROUTES.auth} onClick={() => setOpen(false)}>
+              Connexion / inscription
+            </NavLink>
+          )}
           <Button
             variant="solid"
             size="md"

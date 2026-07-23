@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 import { ROUTES } from './routes';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -19,10 +20,12 @@ function App() {
         <Route path={ROUTES.home} element={<Home />} />
         <Route path={ROUTES.about} element={<About />} />
         <Route path={ROUTES.auth} element={<Auth />} />
-        <Route path={ROUTES.play} element={<Play />} />
-        <Route path={ROUTES.result} element={<Result />} />
-        <Route path={ROUTES.profile} element={<Profile />} />
-        <Route path={ROUTES.stats} element={<Stats />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path={ROUTES.play} element={<Play />} />
+          <Route path={ROUTES.result} element={<Result />} />
+          <Route path={ROUTES.profile} element={<Profile />} />
+          <Route path={ROUTES.stats} element={<Stats />} />
+        </Route>
         <Route path={ROUTES.faq} element={<Faq />} />
         <Route path={ROUTES.contact} element={<Contact />} />
         <Route path={ROUTES.legal} element={<Legal />} />

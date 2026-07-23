@@ -1,20 +1,60 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
+import { useAuth } from '../context/useAuth';
 import { useGame } from '../context/useGame';
 import Button from '../components/ui/Button';
 import { Input, Select, FieldRow } from '../components/ui/Field';
 import logoEmblem from '../assets/brand/logo-emblem-t.png';
 
-export default function Auth() {
-  const [mode, setMode] = useState('signup'); // 'signup' | 'login'
-  const navigate = useNavigate();
-  const { fireToast } = useGame();
+const initialForm = {
+  prenom: '',
+  nom: '',
+  date_de_naissance: '',
+  sexe: '',
+  email: '',
+  mot_de_passe: '',
+};
 
-  function submit(e) {
+export default function Auth() {
+  const [mode, setMode] = useState('signup');
+  const [form, setForm] = useState(initialForm);
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { signIn, signUp, refreshProfile } = useAuth();
+  const { fireToast } = useGame();
+  const from = location.state?.from;
+  const redirectTo = from ? `${from.pathname}${from.search || ''}${from.hash || ''}` : ROUTES.profile;
+
+  function updateField(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function submit(e) {
     e.preventDefault();
-    fireToast(mode === 'signup' ? 'Bienvenue chez Thé Tip Top !' : 'Connexion réussie — bon retour !');
-    navigate(ROUTES.profile);
+    setSubmitting(true);
+
+    try {
+      if (mode === 'signup') {
+        await signUp(form);
+        await refreshProfile();
+        fireToast('Bienvenue chez The Tip Top !');
+      } else {
+        await signIn({
+          email: form.email,
+          mot_de_passe: form.mot_de_passe,
+        });
+        await refreshProfile();
+        fireToast('Connexion reussie, bon retour !');
+      }
+
+      navigate(redirectTo, { replace: true });
+    } catch (error) {
+      fireToast(error.message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -55,7 +95,7 @@ export default function Auth() {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 26 }}>
-          <img src={logoEmblem} alt="Thé Tip Top" style={{ width: 76, height: 76, objectFit: 'contain', marginBottom: 12 }} />
+          <img src={logoEmblem} alt="The Tip Top" style={{ width: 76, height: 76, objectFit: 'contain', marginBottom: 12 }} />
           <h1 style={{ fontWeight: 600, fontSize: 30, margin: 0 }}>Bienvenue</h1>
           <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--muted)' }}>
             Connectez-vous pour participer et suivre vos lots.
@@ -80,7 +120,7 @@ export default function Auth() {
               boxShadow: mode === 'signup' ? '0 2px 6px -3px rgba(0,0,0,.2)' : 'none',
             }}
           >
-            Inscription
+            Creer un compte
           </button>
           <button
             type="button"
@@ -107,46 +147,60 @@ export default function Auth() {
           {mode === 'signup' && (
             <>
               <FieldRow>
-                <Input label="Prénom" required placeholder="Camille" />
-                <Input label="Nom" required placeholder="Martin" />
+                <Input label="Prenom" required placeholder="Camille" value={form.prenom} onChange={(event) => updateField('prenom', event.target.value)} />
+                <Input label="Nom" required placeholder="Martin" value={form.nom} onChange={(event) => updateField('nom', event.target.value)} />
               </FieldRow>
               <FieldRow>
-                <Input label="Date de naissance" type="date" required />
-                <Select label="Sexe" required defaultValue="">
+                <Input label="Date de naissance" type="date" required value={form.date_de_naissance} onChange={(event) => updateField('date_de_naissance', event.target.value)} />
+                <Select label="Sexe" required value={form.sexe} onChange={(event) => updateField('sexe', event.target.value)}>
                   <option value="" disabled>
-                    Choisir…
+                    Choisir...
                   </option>
-                  <option>Femme</option>
-                  <option>Homme</option>
-                  <option>Non précisé</option>
+                  <option value="F">Femme</option>
+                  <option value="M">Homme</option>
+                  <option value="N">Non precise</option>
                 </Select>
               </FieldRow>
             </>
           )}
-          <Input label="Adresse e-mail" type="email" required placeholder="vous@exemple.fr" />
-          <Input label="Mot de passe" type="password" required placeholder="••••••••" />
+          <Input label="Adresse e-mail" type="email" required placeholder="vous@exemple.fr" value={form.email} onChange={(event) => updateField('email', event.target.value)} />
+          <Input
+            label="Mot de passe"
+            type="password"
+            required
+            placeholder="********"
+            value={form.mot_de_passe}
+            onChange={(event) => updateField('mot_de_passe', event.target.value)}
+            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$"
+            title="8 caracteres minimum, avec 1 majuscule, 1 minuscule, 1 chiffre et 1 caractere special."
+          />
+          {mode === 'signup' && (
+            <p style={{ margin: '-6px 0 0', fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+              Minimum 8 caracteres, avec 1 majuscule, 1 minuscule, 1 chiffre et 1 caractere special.
+            </p>
+          )}
           {mode === 'signup' && (
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, marginTop: 2 }}>
               <input type="checkbox" required style={{ marginTop: 2, accentColor: 'var(--green)', width: 15, height: 15 }} />
               <span>
                 J'accepte le{' '}
                 <a onClick={() => navigate(ROUTES.legal)} style={{ color: 'var(--green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>
-                  règlement du jeu
+                  reglement du jeu
                 </a>{' '}
                 et la{' '}
                 <a onClick={() => navigate(ROUTES.legal)} style={{ color: 'var(--green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>
-                  politique de confidentialité
+                  politique de confidentialite
                 </a>{' '}
                 (RGPD).
               </span>
             </label>
           )}
-          <Button type="submit" variant="solid" style={{ marginTop: 6 }} block>
-            {mode === 'signup' ? 'Créer mon compte' : 'Me connecter'}
+          <Button type="submit" variant="solid" style={{ marginTop: 6 }} block disabled={submitting}>
+            {submitting ? 'Veuillez patienter...' : mode === 'signup' ? 'Creer mon compte' : 'Me connecter'}
           </Button>
         </form>
         <p style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--muted)', margin: '18px 0 0' }}>
-          🔒 Vos données ne sont jamais revendues.
+          Vos donnees ne sont jamais revendues.
         </p>
       </div>
     </section>

@@ -4,14 +4,17 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import './styles/pages.css';
 import App from './App.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
 import { GameProvider } from './context/GameContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <GameProvider>
-        <App />
-      </GameProvider>
+      <AuthProvider>
+        <GameProvider>
+          <App />
+        </GameProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>
 );

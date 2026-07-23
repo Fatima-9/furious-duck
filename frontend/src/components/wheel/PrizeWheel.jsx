@@ -13,7 +13,8 @@ const LABEL_POS = [
 ];
 
 export default function PrizeWheel() {
-  const { rotation, spinDuration, isSpinning, spin } = useGame();
+  const { rotation, spinDuration, isSpinning, codeValid, ticketCheck, spin } = useGame();
+  const disabled = isSpinning || !codeValid;
 
   return (
     <div style={{ position: 'relative', width: 340, height: 340, flex: '0 0 auto' }}>
@@ -108,7 +109,9 @@ export default function PrizeWheel() {
 
       <button
         onClick={spin}
+        disabled={disabled}
         aria-label="Tourner la roue"
+        title={ticketCheck.message || 'Saisissez un code valide'}
         style={{
           position: 'absolute',
           top: '50%',
@@ -121,13 +124,16 @@ export default function PrizeWheel() {
           border: '3px solid var(--gold)',
           background: 'radial-gradient(circle at 50% 32%, #2a5738, #0c2012)',
           color: 'var(--gold-soft)',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
           display: 'grid',
           placeItems: 'center',
+          opacity: disabled ? 0.62 : 1,
           boxShadow: '0 12px 28px -8px rgba(0,0,0,.75), inset 0 2px 10px rgba(196,168,78,.3)',
           transition: 'transform .18s',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = 'translate(-50%,-50%) scale(1.06)')}
+        onMouseEnter={(e) => {
+          if (!disabled) e.currentTarget.style.transform = 'translate(-50%,-50%) scale(1.06)';
+        }}
         onMouseLeave={(e) => (e.currentTarget.style.transform = 'translate(-50%,-50%) scale(1)')}
       >
         <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, fontWeight: 700, letterSpacing: '.16em' }}>
