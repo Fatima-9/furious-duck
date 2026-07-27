@@ -3,6 +3,17 @@ const bcrypt = require("bcrypt");
 const Utilisateur = require("../models/Utilisateur");
 const ApiError = require("../utils/apiError");
 const { SALT_ROUNDS } = require("./authService");
+const emailService = require("./emailService");
+
+// L'envoi d'email ne doit jamais faire echouer l'action principale : on logue
+// l'erreur eventuelle sans la propager.
+async function sendEmailSafely(promise) {
+  try {
+    await promise;
+  } catch (error) {
+    console.error("[email] envoi impossible:", error.message);
+  }
+}
 
 const TOKEN_EXPIRES_IN_MINUTES = Number(
   process.env.RESET_TOKEN_EXPIRES_IN_MINUTES || 60
@@ -29,6 +40,10 @@ async function requestPasswordReset({ email }) {
     reset_token_expires: expires,
   });
 
+  await sendEmailSafely(
+    emailService.sendPasswordResetEmail(user.email, resetToken)
+  );
+
   return { resetToken };
 }
 
@@ -52,6 +67,9 @@ async function resetPassword({ token, mot_de_passe }) {
     reset_token_hash: null,
     reset_token_expires: null,
   });
+
+  // Confirmation : le mot de passe vient de changer.
+  await sendEmailSafely(emailService.sendPasswordChangedEmail(user.email));
 }
 
 module.exports = {

@@ -3,6 +3,7 @@ const Utilisateur = require("../models/Utilisateur");
 const ApiError = require("../utils/apiError");
 const { sanitizeUser } = require("../utils/userPresenter");
 const { SALT_ROUNDS } = require("./authService");
+const emailService = require("./emailService");
 
 async function getProfile(userId) {
   const user = await Utilisateur.findById(userId);
@@ -55,6 +56,13 @@ async function changePassword(userId, { mot_de_passe_actuel, mot_de_passe }) {
   const hashedPassword = await bcrypt.hash(mot_de_passe, SALT_ROUNDS);
 
   await Utilisateur.update(userId, { mot_de_passe: hashedPassword });
+
+  // Confirmation par email (best-effort : ne bloque pas le changement).
+  try {
+    await emailService.sendPasswordChangedEmail(user.email);
+  } catch (error) {
+    console.error("[email] envoi impossible:", error.message);
+  }
 }
 
 module.exports = {
