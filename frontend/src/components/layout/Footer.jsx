@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../routes';
+import { openCookiePreferences } from '../cookies/cookieConsent';
 import logoEmblemLight from '../../assets/brand/logo-emblem-light.png';
 import './layout.css';
 
@@ -40,6 +41,9 @@ export default function Footer() {
             <Link to={ROUTES.legal}>Mentions legales</Link>
             <Link to={ROUTES.legal}>Confidentialite (RGPD)</Link>
             <Link to={ROUTES.legal}>Cookies</Link>
+            <button type="button" className="ttt-footer-linkbtn" onClick={openCookiePreferences}>
+              Gerer les cookies
+            </button>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import Nav from './Nav';
 import Footer from './Footer';
 import Toast from './Toast';
 import ScrollToTop from './ScrollToTop';
+import CookieBanner from '../cookies/CookieBanner';
 
 export default function Layout() {
   return (
@@ -24,6 +25,7 @@ export default function Layout() {
       </main>
       <Footer />
       <Toast />
+      <CookieBanner />
     </div>
   );
 }
