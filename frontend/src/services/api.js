@@ -78,6 +78,15 @@ export async function register(payload) {
   return response.data;
 }
 
+export async function oauthLogin(payload) {
+  const response = await apiRequest('/api/auth/oauth', {
+    method: 'POST',
+    body: payload,
+    token: null,
+  });
+  return response.data;
+}
+
 export async function getMyProfile() {
   const response = await apiRequest('/api/users/me');
   return response.data.user;

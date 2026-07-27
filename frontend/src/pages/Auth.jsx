@@ -5,6 +5,7 @@ import { useAuth } from '../context/useAuth';
 import { useGame } from '../context/useGame';
 import Button from '../components/ui/Button';
 import { Input, Select, FieldRow } from '../components/ui/Field';
+import SocialLogin from '../components/auth/SocialLogin';
 import logoEmblem from '../assets/brand/logo-emblem-t.png';
 
 const initialForm = {
@@ -199,6 +200,9 @@ export default function Auth() {
             {submitting ? 'Veuillez patienter...' : mode === 'signup' ? 'Creer mon compte' : 'Me connecter'}
           </Button>
         </form>
+
+        <SocialLogin redirectTo={redirectTo} />
+
         <p style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--muted)', margin: '18px 0 0' }}>
           Vos donnees ne sont jamais revendues.
         </p>

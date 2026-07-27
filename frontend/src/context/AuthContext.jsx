@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { clearSession, getMyProfile, getStoredToken, getStoredUser, login, register, storeSession } from '../services/api';
+import { clearSession, getMyProfile, getStoredToken, getStoredUser, login, oauthLogin, register, storeSession } from '../services/api';
 import { AuthContext } from './authContextInstance';
 
 export function AuthProvider({ children }) {
@@ -88,6 +88,19 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const signInWithOAuth = useCallback(async ({ provider, token: oauthToken }) => {
+    setAuthenticating(true);
+    try {
+      const session = await oauthLogin({ provider, token: oauthToken });
+      storeSession(session);
+      setToken(session.token);
+      setUser(session.user);
+      return session;
+    } finally {
+      setAuthenticating(false);
+    }
+  }, []);
+
   const signOut = useCallback(() => {
     clearSession();
     setToken(null);
@@ -104,10 +117,11 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token && user),
       signIn,
       signUp,
+      signInWithOAuth,
       signOut,
       refreshProfile,
     }),
-    [token, user, checkingSession, authenticating, signIn, signUp, signOut, refreshProfile]
+    [token, user, checkingSession, authenticating, signIn, signUp, signInWithOAuth, signOut, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
