@@ -5,6 +5,8 @@ import { ROUTES } from './routes';
 import Home from './pages/Home';
 import About from './pages/About';
 import Auth from './pages/Auth';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Play from './pages/Play';
 import Result from './pages/Result';
 import Profile from './pages/Profile';
@@ -20,6 +22,8 @@ function App() {
         <Route path={ROUTES.home} element={<Home />} />
         <Route path={ROUTES.about} element={<About />} />
         <Route path={ROUTES.auth} element={<Auth />} />
+        <Route path={ROUTES.forgotPassword} element={<ForgotPassword />} />
+        <Route path={ROUTES.resetPassword} element={<ResetPassword />} />
         <Route element={<ProtectedRoute />}>
           <Route path={ROUTES.play} element={<Play />} />
           <Route path={ROUTES.result} element={<Result />} />

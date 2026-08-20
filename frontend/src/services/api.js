@@ -78,6 +78,22 @@ export async function register(payload) {
   return response.data;
 }
 
+export async function requestPasswordReset(email) {
+  return apiRequest('/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email },
+    token: null,
+  });
+}
+
+export async function resetPassword(token, mot_de_passe) {
+  return apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: { token, mot_de_passe },
+    token: null,
+  });
+}
+
 export async function oauthLogin(payload) {
   const response = await apiRequest('/api/auth/oauth', {
     method: 'POST',

@@ -175,6 +175,25 @@ export default function Auth() {
             pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$"
             title="8 caracteres minimum, avec 1 majuscule, 1 minuscule, 1 chiffre et 1 caractere special."
           />
+          {mode === 'login' && (
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.forgotPassword)}
+              style={{
+                alignSelf: 'flex-end',
+                margin: '-6px 0 0',
+                padding: 0,
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--green)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Mot de passe oublié ?
+            </button>
+          )}
           {mode === 'signup' && (
             <p style={{ margin: '-6px 0 0', fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
               Minimum 8 caracteres, avec 1 majuscule, 1 minuscule, 1 chiffre et 1 caractere special.
