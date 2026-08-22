@@ -4,7 +4,8 @@
 // actives que si le consentement correspondant est a true.
 
 export const CONSENT_STORAGE_KEY = 'ttt_cookie_consent';
-export const CONSENT_VERSION = 1;
+export const CONSENT_VERSION = 2;
+export const CONSENT_MAX_AGE_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 // Evenement permettant de rouvrir le bandeau depuis n'importe ou (ex: footer).
 export const OPEN_PREFERENCES_EVENT = 'ttt:open-cookie-preferences';
 
@@ -18,6 +19,12 @@ export function getConsent() {
     const parsed = JSON.parse(raw);
     // Si la version du bandeau a change, on redemande le consentement.
     if (parsed.version !== CONSENT_VERSION) {
+      return null;
+    }
+
+    const savedAt = Date.parse(parsed.date);
+    if (!Number.isFinite(savedAt) || Date.now() - savedAt > CONSENT_MAX_AGE_MS) {
+      window.localStorage.removeItem(CONSENT_STORAGE_KEY);
       return null;
     }
 
