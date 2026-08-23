@@ -131,14 +131,14 @@ EOF
             docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
             for i in $(seq 1 30); do
-              if curl -fsS http://localhost:5000/api/health > /dev/null; then
+              if curl -fsS http://localhost:15000/api/health > /dev/null; then
                 break
               fi
               sleep 2
             done
 
-            curl -fsS http://localhost:5000/api/health
-            curl -fsS http://localhost:5000/api/db/health
+            curl -fsS http://localhost:15000/api/health
+            curl -fsS http://localhost:15000/api/db/health
 
             docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T backend npm run test:integration
           '''
