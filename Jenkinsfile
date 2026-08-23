@@ -131,14 +131,19 @@ EOF
             docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
             for i in $(seq 1 30); do
-              if curl -fsS http://localhost:15000/api/health > /dev/null; then
+              if docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T backend \
+                node -e "fetch('http://localhost:5000/api/health').then(r => { if (!r.ok) process.exit(1); process.exit(0) }).catch(() => process.exit(1))"
+              then
                 break
               fi
               sleep 2
             done
 
-            curl -fsS http://localhost:15000/api/health
-            curl -fsS http://localhost:15000/api/db/health
+            docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T backend \
+            node -e "fetch('http://localhost:5000/api/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })" 
+
+            docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T backend \
+            node -e "fetch('http://localhost:5000/api/db/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })"
 
             docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T backend npm run test:integration
           '''
