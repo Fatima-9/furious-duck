@@ -156,5 +156,36 @@ EOF
         }
       }
     }
+
+    stage('Deploy DEV') {
+      when {
+        branch 'DEV'
+      }
+      steps {
+        withCredentials([
+          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
+          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET')
+        ]) {
+          sh '''
+            cat > backend/.env <<EOF
+PORT=5000
+DATABASE_URL=${DATABASE_URL}
+JWT_SECRET=${JWT_SECRET}
+JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+RESET_TOKEN_EXPIRES_IN_MINUTES=${RESET_TOKEN_EXPIRES_IN_MINUTES}
+DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
+DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
+APP_URL=https://dev.dsp5-archi-o24a-g2.fr
+EOF
+
+            cat > frontend/.env <<EOF
+VITE_API_URL=https://dev.dsp5-archi-o24a-g2.fr
+EOF
+
+            docker compose -p furious-duck-dev-live -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+          '''
+        }
+      }
+    }
   }
 }
