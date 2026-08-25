@@ -1,19 +1,31 @@
 services:
   jenkins:
-    build:
-      context: ./jenkins
+    image: jenkins/jenkins:lts-jdk21
     container_name: furious_duck_jenkins
+    restart: unless-stopped
     user: root
-    ports:
-      - "8080:8080"
-      - "50000:50000"
+    environment:
+      - JENKINS_OPTS=--prefix=/jenkins
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      DOCKER_HOST: unix:///var/run/docker.sock
-    restart: unless-stopped
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose:ro
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.jenkins-dev.rule=(Host(`dev.dsp5-archi-o24a-g2.fr`) || Host(`dev.dsp5-archi-o24a-g2.com`)) && (Path(`/jenkins`) || PathPrefix(`/jenkins/`))"
+      - "traefik.http.routers.jenkins-dev.priority=500"
+      - "traefik.http.routers.jenkins-dev.entrypoints=websecure"
+      - "traefik.http.routers.jenkins-dev.tls=true"
+      - "traefik.http.routers.jenkins-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jenkins-dev.loadbalancer.server.port=8080"
 
 volumes:
   jenkins_home:
-    name: jenkins_home
+
+networks:
+  traefik_proxy:
+    external: true

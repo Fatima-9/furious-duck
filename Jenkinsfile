@@ -132,10 +132,10 @@ DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
 DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
 EOF
 
-            docker-compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
             for i in $(seq 1 30); do
-              if docker-compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
+              if docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
                 node -e "fetch('http://localhost:5000/api/health').then(r => { if (!r.ok) process.exit(1); process.exit(0) }).catch(() => process.exit(1))"
               then
                 break
@@ -143,19 +143,19 @@ EOF
               sleep 2
             done
 
-            docker-compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
             node -e "fetch('http://localhost:5000/api/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })" 
 
-            docker-compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
             node -e "fetch('http://localhost:5000/api/db/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })"
 
-            docker-compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend npm run test:integration
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend npm run test:integration
           '''
         }
       }
       post {
         always {
-          sh 'docker-compose -f docker-compose.yml -f docker-compose.ci.yml down || true'
+          sh 'docker compose -f docker-compose.yml -f docker-compose.ci.yml down || true'
           sh 'rm -f backend/.env'
         }
       }
@@ -188,7 +188,7 @@ EOF
 VITE_API_URL=https://dev.dsp5-archi-o24a-g2.fr
 EOF
 
-            docker-compose -p furious-duck-dev-live -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.dev.live.yml -f docker-compose.monitoring.yml up -d --build
+            docker compose -p furious-duck-dev-live -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.dev.live.yml -f docker-compose.monitoring.yml up -d --build
           '''
         }
       }
