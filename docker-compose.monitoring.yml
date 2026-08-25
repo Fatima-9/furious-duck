@@ -16,7 +16,6 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
-
       - "traefik.http.routers.prometheus-dev.rule=Host(`dev.dsp5-archi-o24a-g2.fr`) && (Path(`/prometheus`) || PathPrefix(`/prometheus/`))"
       - "traefik.http.routers.prometheus-dev.priority=500"
       - "traefik.http.routers.prometheus-dev.entrypoints=websecure"
@@ -24,8 +23,37 @@ services:
       - "traefik.http.routers.prometheus-dev.tls.certresolver=letsencrypt"
       - "traefik.http.services.prometheus-dev.loadbalancer.server.port=9090"
 
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: furious_duck_grafana_dev
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://dev.dsp5-archi-o24a-g2.fr/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - grafana_data_dev:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - default
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.grafana-dev.rule=Host(`dev.dsp5-archi-o24a-g2.fr`) && (Path(`/grafana`) || PathPrefix(`/grafana/`))"
+      - "traefik.http.routers.grafana-dev.priority=500"
+      - "traefik.http.routers.grafana-dev.entrypoints=websecure"
+      - "traefik.http.routers.grafana-dev.tls=true"
+      - "traefik.http.routers.grafana-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grafana-dev.loadbalancer.server.port=3000"
+    depends_on:
+      - prometheus
+
 volumes:
   prometheus_data_dev:
+  grafana_data_dev:
 
 networks:
   traefik_proxy:

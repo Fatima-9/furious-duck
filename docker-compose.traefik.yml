@@ -1,34 +1,54 @@
 services:
   traefik:
-    image: traefik:v3.2
+    image: traefik:v3.6.2
     container_name: furious_duck_traefik
+    restart: unless-stopped
+    environment:
+      DOCKER_API_VERSION: "1.40"
     command:
       - "--api.dashboard=true"
-      - "--api.insecure=true"
+      - "--api.basePath=/traefik"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+
+      - "--certificatesresolvers.letsencrypt.acme.email=thetiptop.gp2@gmail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+
     ports:
-      - "8088:80"
-      - "8081:8080"
+      - "80:80"
+      - "443:443"
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-      - backend
-      - frontend
+      - traefik_letsencrypt:/letsencrypt
 
-  backend:
+    networks:
+      - traefik_proxy
+
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=web"
-      - "traefik.http.routers.backend.priority=20"
-      - "traefik.http.services.backend.loadbalancer.server.port=5000"
 
-  frontend:
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.routers.frontend.priority=1"
-      - "traefik.http.services.frontend.loadbalancer.server.port=5173"
+      - "traefik.http.routers.traefik-dev.rule=Host(`dev.dsp5-archi-o24a-g2.fr`) && PathPrefix(`/traefik`)"
+      - "traefik.http.routers.traefik-dev.priority=600"
+      - "traefik.http.routers.traefik-dev.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dev.tls=true"
+      - "traefik.http.routers.traefik-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dev.service=api@internal"
+      - "traefik.http.routers.traefik-dev.middlewares=traefik-dev-auth"
+
+      - "traefik.http.middlewares.traefik-dev-auth.basicauth.users=admin:$$2y$$05$$4w0CnzUEMR78dkFUHLyv8ezZqX1fay9t.Zs65iEDmkEu9MF6qU1ca"
+
+volumes:
+  traefik_letsencrypt:
+
+networks:
+  traefik_proxy:
+    external: true
