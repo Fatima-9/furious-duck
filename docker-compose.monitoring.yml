@@ -6,7 +6,7 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--web.external-url=https://dev.dsp5-archi-o24a-g2.fr/prometheus/"
-      - "--web.route-prefix=/prometheus"
+      - "--web.route-prefix=/"
     volumes:
       - ./monitoring/prometheus:/etc/prometheus:ro
       - prometheus_data_dev:/prometheus
@@ -21,12 +21,14 @@ services:
       - "traefik.http.routers.prometheus-dev.entrypoints=websecure"
       - "traefik.http.routers.prometheus-dev.tls=true"
       - "traefik.http.routers.prometheus-dev.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.prometheus-dev.middlewares=prometheus-dev-slash"
+      - "traefik.http.routers.prometheus-dev.middlewares=prometheus-dev-slash,prometheus-dev-strip"
       - "traefik.http.services.prometheus-dev.loadbalancer.server.port=9090"
 
       - "traefik.http.middlewares.prometheus-dev-slash.redirectregex.regex=^https://dev\\.dsp5-archi-o24a-g2\\.fr/prometheus$$"
       - "traefik.http.middlewares.prometheus-dev-slash.redirectregex.replacement=https://dev.dsp5-archi-o24a-g2.fr/prometheus/"
       - "traefik.http.middlewares.prometheus-dev-slash.redirectregex.permanent=true"
+
+      - "traefik.http.middlewares.prometheus-dev-strip.stripprefix.prefixes=/prometheus"
 
 volumes:
   prometheus_data_dev:
