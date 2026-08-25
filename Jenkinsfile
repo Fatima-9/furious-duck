@@ -159,7 +159,9 @@ EOF
 
     stage('Deploy DEV') {
       when {
-        branch 'DEV'
+        expression {
+          return env.GIT_BRANCH == 'origin/DEV' || env.BRANCH_NAME == 'DEV'
+        }
       }
       steps {
         withCredentials([
