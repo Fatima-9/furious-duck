@@ -1,7 +1,13 @@
 services:
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.live
     restart: unless-stopped
     volumes: !reset []
+    ports: !override []
+    environment:
+      NODE_ENV: production
     networks:
       - default
       - traefik_proxy
@@ -16,8 +22,12 @@ services:
       - "traefik.http.services.backend-dev.loadbalancer.server.port=5000"
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.live
     restart: unless-stopped
     volumes: !reset []
+    ports: !override []
     networks:
       - default
       - traefik_proxy
@@ -29,7 +39,7 @@ services:
       - "traefik.http.routers.frontend-dev.entrypoints=websecure"
       - "traefik.http.routers.frontend-dev.tls=true"
       - "traefik.http.routers.frontend-dev.tls.certresolver=letsencrypt"
-      - "traefik.http.services.frontend-dev.loadbalancer.server.port=5173"
+      - "traefik.http.services.frontend-dev.loadbalancer.server.port=80"
 
 networks:
   traefik_proxy:
