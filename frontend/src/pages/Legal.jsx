@@ -1,215 +1,285 @@
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { openCookiePreferences } from '../components/cookies/cookieConsent';
+
 const SECTIONS = [
   { id: 'lg-mentions', label: 'Mentions légales' },
-  { id: 'lg-cgu', label: "Conditions d'utilisation (CGU)" },
+  { id: 'lg-cgu', label: "Conditions d'utilisation" },
   { id: 'lg-reglement', label: 'Règlement du jeu' },
-  { id: 'lg-rgpd', label: 'Confidentialité (RGPD)' },
-  { id: 'lg-cookies', label: 'Cookies' },
+  { id: 'lg-rgpd', label: 'Confidentialité' },
+  { id: 'lg-cookies', label: 'Cookies & Analytics' },
 ];
 
-const H2 = { fontWeight: 600, fontSize: 26, margin: '0 0 12px', scrollMarginTop: 90 };
-const H3 = { fontWeight: 600, fontSize: 17, margin: '18px 0 6px', color: 'var(--ink)' };
-const P = { margin: '0 0 14px' };
+const PRIZES = [
+  ['60 %', 'Un infuseur à thé'],
+  ['20 %', 'Une boîte de 100 g de thé détox ou d’infusion'],
+  ['10 %', 'Une boîte de 100 g de thé signature'],
+  ['6 %', 'Un coffret découverte d’une valeur de 39 €'],
+  ['4 %', 'Un coffret découverte d’une valeur de 69 €'],
+];
 
 export default function Legal() {
-  return (
-    <section className="ttt-section ttt-section--narrow" style={{ paddingTop: 56, paddingBottom: 80 }}>
-      <div style={{ marginBottom: 34 }}>
-        <div className="ttt-eyebrow">Informations légales</div>
-        <h1 style={{ fontWeight: 600, fontSize: 'clamp(32px,4.5vw,48px)', margin: 0 }}>Règlement & mentions.</h1>
-      </div>
+  const { hash } = useLocation();
+  const [activeSection, setActiveSection] = useState(hash.slice(1) || SECTIONS[0].id);
 
-      <div
-        style={{
-          margin: '0 0 30px',
-          padding: '14px 18px',
-          borderRadius: 12,
-          background: 'var(--success-bg)',
-          border: '1px solid var(--green)',
-          fontSize: 14,
-          color: 'var(--ink-soft)',
-        }}
-      >
-        <strong>Projet étudiant fictif.</strong> Ce site est réalisé dans un cadre pédagogique. Aucun achat ni
+  useEffect(() => {
+    document.title = 'Règlement du jeu, mentions légales et confidentialité | Thé Tip Top';
+    const description =
+      'Consultez le règlement du jeu-concours Thé Tip Top, les mentions légales, les CGU et les informations RGPD et cookies.';
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
+    }
+    meta.content = description;
+  }, []);
+
+  useEffect(() => {
+    const targetId = hash.slice(1);
+    if (!targetId || !SECTIONS.some(({ id }) => id === targetId)) return;
+    window.requestAnimationFrame(() => {
+      setActiveSection(targetId);
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [hash]);
+
+  useEffect(() => {
+    const sections = SECTIONS.map(({ id }) => document.getElementById(id)).filter(Boolean);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (visible) setActiveSection(visible.target.id);
+      },
+      { rootMargin: '-18% 0px -68% 0px', threshold: 0 },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section className="ttt-section ttt-section--narrow ttt-legal-page">
+      <header className="ttt-legal-header">
+        <div className="ttt-eyebrow">Informations légales et transparence</div>
+        <h1>Règlement & mentions</h1>
+        <p>
+          Retrouvez les règles du jeu-concours Thé Tip Top, les conditions d’utilisation du service et les
+          informations relatives à vos données personnelles.
+        </p>
+      </header>
+
+      <aside className="ttt-legal-notice" aria-label="Information importante">
+        <strong>Projet étudiant fictif.</strong> Ce site est réalisé dans un cadre pédagogique. Aucun achat ni aucune
         transaction réelle ne peut être effectué.
-      </div>
+      </aside>
 
       <div className="ttt-legal-grid">
-        <nav style={{ position: 'sticky', top: 90, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13.5 }}>
-          {SECTIONS.map((s, i) => (
+        <nav className="ttt-legal-nav" aria-label="Sommaire des informations légales">
+          <span className="ttt-legal-nav-title">Sur cette page</span>
+          {SECTIONS.map((section) => (
             <a
-              key={s.id}
-              href={`#${s.id}`}
-              style={{
-                color: i === 0 ? 'var(--green)' : 'var(--muted)',
-                fontWeight: i === 0 ? 700 : 400,
-                textDecoration: 'none',
-                padding: '8px 12px',
-                borderRadius: 9,
-                background: i === 0 ? 'var(--success-bg)' : 'transparent',
-              }}
+              key={section.id}
+              href={`#${section.id}`}
+              className={activeSection === section.id ? 'is-active' : ''}
+              aria-current={activeSection === section.id ? 'location' : undefined}
+              onClick={() => setActiveSection(section.id)}
             >
-              {s.label}
+              {section.label}
             </a>
           ))}
         </nav>
 
-        <div style={{ fontSize: 14.5, color: 'var(--ink-soft)', lineHeight: 1.8 }}>
-          {/* ---------- MENTIONS LEGALES ---------- */}
-          <h2 id="lg-mentions" style={H2}>Mentions légales</h2>
+        <article className="ttt-legal-content">
+          <section aria-labelledby="lg-mentions">
+            <h2 id="lg-mentions">Mentions légales</h2>
+            <h3>Éditeur du site</h3>
+            <address className="ttt-legal-details">
+              <strong>Thé Tip Top</strong>, Société Anonyme (SA) au capital social de 150 000 €<br />
+              Siège social : 18 rue Léon Frot, 75011 Paris<br />
+              Représentant légal : Eric Bourdon, Président<br />
+              SIREN : 763 827 619 · SIRET : 763 827 619 00043<br />
+              TVA intracommunautaire : FR27763827619<br />
+              Code APE / NAF : information à compléter avant la mise en production<br />
+              Contact : <a href="mailto:contact@thetiptop.fr">contact@thetiptop.fr</a>
+            </address>
 
-          <h3 style={H3}>Éditeur du site</h3>
-          <p style={P}>
-            <strong>Thé Tip Top</strong> — Société Anonyme (SA) au capital de 150 000 €.<br />
-            Siège social : 18 rue Léon Frot, 75011 Paris.<br />
-            Représentant légal : Eric Bourdon, Président de Thé Tip Top.<br />
-            SIREN : 763 827 619 — SIRET : 763 827 619 00043.<br />
-            TVA intracommunautaire : FR27763827619.<br />
-            Code APE / NAF : à compléter.<br />
-            Contact : contact@thetiptop.fr
-          </p>
+            <h3>Conception et hébergement</h3>
+            <p>
+              Le site est conçu dans un cadre pédagogique par l’agence étudiante Furious Ducks pour Thé Tip Top. Les
+              coordonnées définitives de l’hébergeur (dénomination, adresse et téléphone) seront publiées ici avant
+              toute mise en ligne publique.
+            </p>
 
-          <h3 style={H3}>Hébergeur</h3>
-          <p style={P}>
-            Nom de l'hébergeur : à compléter.<br />
-            Adresse : à compléter.<br />
-            Téléphone : à compléter.
-          </p>
+            <h3>Propriété intellectuelle</h3>
+            <p>
+              La structure du site et ses contenus, notamment les textes, illustrations, photographies, éléments
+              graphiques, logos et signes distinctifs, sont protégés par le droit de la propriété intellectuelle.
+              Toute reproduction, représentation, adaptation ou diffusion, totale ou partielle, est interdite sans
+              autorisation écrite préalable de leur titulaire, hors exceptions prévues par la loi.
+            </p>
 
-          <h3 style={H3}>Propriété intellectuelle</h3>
-          <p style={P}>
-            Le site ainsi que l'ensemble de ses contenus (textes, images, logo, design, etc.) sont protégés par le
-            droit de la propriété intellectuelle. Toute reproduction, modification ou diffusion sans autorisation est
-            interdite.
-          </p>
+            <h3>Responsabilité et disponibilité</h3>
+            <p>
+              Thé Tip Top met en œuvre les moyens raisonnables pour fournir des informations exactes et maintenir
+              l’accès au service. Sa responsabilité ne saurait toutefois être engagée en cas d’interruption, d’erreur,
+              de force majeure, d’usage frauduleux ou de dommage indirect lié à l’utilisation du site.
+            </p>
+            <p className="ttt-legal-updated">Dernière mise à jour : 23 août 2026.</p>
+          </section>
 
-          <h3 style={H3}>Responsabilité</h3>
-          <p style={P}>
-            L'éditeur ne pourra être tenu responsable des dommages directs ou indirects liés à l'utilisation du site.
-          </p>
+          <section aria-labelledby="lg-cgu">
+            <h2 id="lg-cgu">Conditions Générales d’Utilisation</h2>
+            <h3>Objet et acceptation</h3>
+            <p>
+              Les présentes conditions encadrent l’accès et l’utilisation du site de jeu-concours Thé Tip Top.
+              L’utilisation du site implique leur acceptation. Le service est accessible gratuitement à toute
+              personne disposant d’un accès à Internet ; la participation et la consultation des gains nécessitent un
+              compte.
+            </p>
 
-          <p style={{ ...P, fontSize: 13, color: 'var(--muted)', marginBottom: 28 }}>
-            Dernière mise à jour des mentions légales : 16 février 2026.
-          </p>
+            <h3>Compte utilisateur</h3>
+            <p>
+              L’utilisateur peut s’inscrire par formulaire ou au moyen d’un compte Google lorsque cette option est
+              disponible. Il s’engage à transmettre des informations exactes et à protéger ses identifiants. Toute
+              fraude, usurpation d’identité, tentative de contournement ou perturbation du service peut entraîner la
+              suspension ou la suppression du compte, sans préjudice des recours applicables.
+            </p>
 
-          {/* ---------- CGU ---------- */}
-          <h2 id="lg-cgu" style={H2}>Conditions Générales d'Utilisation (CGU)</h2>
+            <h3>Évolution du service et droit applicable</h3>
+            <p>
+              Thé Tip Top peut faire évoluer le service et les présentes conditions. Toute modification importante
+              sera portée à la connaissance des utilisateurs. Ces conditions sont soumises au droit français. En cas
+              de différend, les parties rechercheront d’abord une solution amiable avant de saisir la juridiction
+              compétente.
+            </p>
+          </section>
 
-          <h3 style={H3}>Acceptation des CGU</h3>
-          <p style={P}>
-            L'accès et l'utilisation du site impliquent l'acceptation pleine et entière des présentes Conditions
-            Générales d'Utilisation. Tout utilisateur qui n'accepte pas les présentes conditions est invité à ne pas
-            utiliser le site ni les services proposés.
-          </p>
+          <section aria-labelledby="lg-reglement">
+            <h2 id="lg-reglement">Règlement du jeu-concours</h2>
+            <div className="ttt-legal-keyfacts" aria-label="Informations essentielles du jeu">
+              <div><strong>Durée</strong><span>Du 1er au 30 août 2026</span></div>
+              <div><strong>Participation</strong><span>Un code unique par ticket éligible</span></div>
+              <div><strong>Retrait des gains</strong><span>Jusqu’au 29 septembre 2026</span></div>
+            </div>
 
-          <h3 style={H3}>Objet</h3>
-          <p style={P}>
-            Les présentes Conditions Générales d'Utilisation ont pour objet de définir les modalités d'accès et
-            d'utilisation du site de jeu-concours proposé par Thé Tip Top.
-          </p>
+            <h3>Organisation et conditions de participation</h3>
+            <p>
+              Thé Tip Top organise un jeu-concours dans le cadre de l’ouverture de sa 10e boutique à Nice. Il est
+              ouvert aux personnes disposant d’un ticket remis pour un achat éligible supérieur à 49 € dans une
+              boutique participante. La participation nécessite un compte et la saisie du code unique à 10 caractères
+              figurant sur le ticket de caisse ou la facture. Un code ne peut être utilisé qu’une seule fois.
+            </p>
 
-          <h3 style={H3}>Accès au site</h3>
-          <p style={P}>
-            Le site est accessible gratuitement à tout utilisateur disposant d'un accès à Internet. Certaines
-            fonctionnalités (participation au jeu, consultation des gains) nécessitent la création d'un compte.
-          </p>
+            <h3>Attribution des gains</h3>
+            <p>
+              Le jeu est 100 % gagnant, dans la limite de 500 000 tickets. Les codes sont générés avant le lancement
+              afin de respecter la répartition annoncée :
+            </p>
+            <ul className="ttt-legal-prizes">
+              {PRIZES.map(([percentage, prize]) => (
+                <li key={percentage}><strong>{percentage}</strong><span>{prize}</span></li>
+              ))}
+            </ul>
 
-          <h3 style={H3}>Inscription et compte utilisateur</h3>
-          <p style={P}>
-            L'utilisateur peut s'inscrire soit via un formulaire d'inscription classique, soit en utilisant un compte
-            Google. Il s'engage à fournir des informations exactes, complètes et à jour, et à ne pas usurper
-            l'identité d'un tiers.
-          </p>
+            <h3>Réclamation et remise des gains</h3>
+            <p>
+              Le résultat est affiché après validation du code et enregistré dans l’espace personnel. Le participant
+              dispose de 30 jours après la fin du jeu pour retirer son gain, selon les modalités communiquées par Thé
+              Tip Top. Toute demande doit être adressée à <a href="mailto:contact@thetiptop.fr">contact@thetiptop.fr</a>
+              avec les éléments permettant d’identifier le compte et le ticket, sans communiquer de mot de passe.
+            </p>
 
-          <h3 style={H3}>Obligations de l'utilisateur</h3>
-          <p style={P}>
-            L'utilisateur s'engage à utiliser le site conformément à sa destination et dans le respect de la
-            législation en vigueur. Il garantit l'exactitude des informations fournies lors de son inscription et
-            s'interdit toute utilisation frauduleuse du site ou du jeu-concours. Toute tentative de fraude, de
-            contournement des règles du jeu, d'usurpation d'identité ou de perturbation du fonctionnement du site
-            pourra entraîner la suspension ou la suppression du compte concerné, sans préjudice d'éventuelles
-            poursuites prévues par la loi.
-          </p>
+            <h3>Tirage au sort final</h3>
+            <p>
+              À l’issue du jeu, un tirage au sort désigne le gagnant d’un an de thé, d’une valeur de 360 €. Chaque
+              participant éligible dispose des mêmes chances, indépendamment de son nombre de participations. Le
+              gagnant sera contacté avec les modalités de remise du lot.
+            </p>
 
-          <h3 style={H3}>Droits des utilisateurs</h3>
-          <p style={P}>
-            Conformément au Règlement Général sur la Protection des Données (RGPD), chaque utilisateur dispose d'un
-            droit d'accès, de rectification, de suppression, d'opposition, de limitation du traitement ainsi que d'un
-            droit à la portabilité de ses données personnelles. Ces droits peuvent être exercés à tout moment en
-            contactant Thé Tip Top via l'adresse e-mail dédiée à la gestion des données personnelles. Si l'utilisateur
-            estime que ses droits ne sont pas respectés, il dispose également du droit d'introduire une réclamation
-            auprès de la Commission Nationale de l'Informatique et des Libertés (CNIL).
-          </p>
+            <h3>Fraude, annulation et responsabilité</h3>
+            <p>
+              Tout code falsifié, déjà utilisé ou obtenu frauduleusement est refusé. L’organisateur peut écarter une
+              participation irrégulière et adapter, reporter ou annuler le jeu si des circonstances indépendantes de
+              sa volonté l’exigent, en informant les participants par un moyen approprié.
+            </p>
+          </section>
 
-          <h3 style={H3}>Responsabilité</h3>
-          <p style={P}>
-            Thé Tip Top ne pourra être tenu responsable des dommages résultant d'un dysfonctionnement technique, d'une
-            interruption temporaire ou définitive du site, d'un cas de force majeure ou d'une utilisation frauduleuse
-            du service par un tiers.
-          </p>
+          <section aria-labelledby="lg-rgpd">
+            <h2 id="lg-rgpd">Données personnelles et confidentialité</h2>
+            <h3>Responsable, données et finalités</h3>
+            <p>
+              Thé Tip Top est responsable des traitements liés au site. Les données de compte et de participation
+              (nom, prénom, adresse e-mail, date de naissance lorsque renseignée, identifiants techniques, tickets,
+              gains et historique) servent à créer et sécuriser le compte, administrer le jeu, attribuer et remettre
+              les gains, répondre aux demandes et prévenir la fraude. Les communications commerciales ne sont
+              envoyées qu’avec un consentement préalable.
+            </p>
 
-          <h3 style={H3}>Modification des CGU</h3>
-          <p style={P}>
-            Thé Tip Top se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront
-            informés en cas de modification.
-          </p>
+            <h3>Bases légales, destinataires et conservation</h3>
+            <p>
+              Les traitements reposent, selon leur finalité, sur l’exécution du service demandé, le respect
+              d’obligations légales, l’intérêt légitime de sécurisation ou le consentement. Les données sont réservées
+              aux personnes habilitées de Thé Tip Top et à ses prestataires techniques strictement nécessaires. Elles
+              sont conservées pendant la durée utile au jeu et aux obligations applicables ; les données de
+              prospection sont conservées au maximum trois ans après le dernier contact.
+            </p>
 
-          <h3 style={H3}>Loi applicable et juridiction compétente</h3>
-          <p style={{ ...P, marginBottom: 28 }}>
-            Les présentes Conditions Générales d'Utilisation sont soumises au droit français. En cas de litige relatif
-            à l'interprétation, à l'exécution ou à l'utilisation du site, les tribunaux français seront seuls
-            compétents.
-          </p>
+            <h3>Vos droits</h3>
+            <p>
+              Vous pouvez demander l’accès, la rectification, l’effacement ou la portabilité de vos données, ainsi que
+              la limitation d’un traitement ou vous y opposer. Vous pouvez retirer votre consentement à tout moment,
+              sans remettre en cause les traitements déjà réalisés. Exercez ces droits depuis votre espace personnel
+              ou à <a href="mailto:contact@thetiptop.fr">contact@thetiptop.fr</a>. Une preuve d’identité peut être
+              demandée en cas de doute raisonnable. Vous pouvez également saisir la{' '}
+              <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noreferrer">CNIL</a>.
+            </p>
+          </section>
 
-          {/* ---------- REGLEMENT DU JEU ---------- */}
-          <h2 id="lg-reglement" style={H2}>Règlement du jeu-concours</h2>
-          <p style={P}>
-            Le jeu-concours est 100 % gagnant. La participation s'effectue à l'aide d'un code unique à 10 caractères
-            figurant sur un ticket de caisse ou une facture éligible. Chaque code de participation ne peut être
-            utilisé qu'une seule fois.
-          </p>
-          <p style={P}>
-            Les gains sont attribués automatiquement selon une répartition prédéfinie respectant les probabilités
-            fixées par Thé Tip Top. Les codes gagnants sont générés avant le lancement du jeu-concours afin de
-            garantir le respect des pourcentages de gains annoncés.
-          </p>
-          <p style={{ ...P, marginBottom: 28 }}>
-            Un tirage au sort final est organisé à l'issue du jeu-concours afin de désigner le gagnant d'un lot
-            exceptionnel supplémentaire. Toute participation implique l'acceptation du présent règlement.
-          </p>
+          <section aria-labelledby="lg-cookies">
+            <h2 id="lg-cookies">Cookies et mesure d’audience</h2>
+            <h3>Choix proposés</h3>
+            <p>
+              Les éléments strictement nécessaires au fonctionnement, à la sécurité et à la mémorisation de vos choix
+              sont actifs sans consentement. Les catégories facultatives « mesure d’audience » et « marketing » sont
+              désactivées par défaut. Vous pouvez les accepter, les refuser ou les sélectionner séparément ; refuser
+              n’empêche pas d’accéder au site.
+            </p>
 
-          {/* ---------- RGPD ---------- */}
-          <h2 id="lg-rgpd" style={H2}>Données personnelles (RGPD)</h2>
-          <p style={P}>
-            Les données personnelles collectées dans le cadre du jeu-concours, telles que le nom, le prénom ou
-            l'adresse e-mail, sont utilisées pour gérer les participations, attribuer les gains, contacter les
-            gagnants et assurer le bon fonctionnement du service. Les utilisateurs peuvent également recevoir des
-            communications commerciales uniquement s'ils ont donné leur consentement préalable.
-          </p>
-          <p style={{ ...P, marginBottom: 28 }}>
-            Les données sont conservées pendant une durée limitée et adaptée à leur finalité. Les informations
-            utilisées à des fins marketing sont conservées pendant une durée maximale de trois ans à compter du
-            dernier contact avec l'utilisateur. Les autres données sont conservées conformément aux obligations
-            légales et réglementaires applicables. Vous pouvez exercer vos droits directement depuis votre espace
-            personnel ou à l'adresse dédiée à la gestion des données personnelles.
-          </p>
+            <h3>Google Analytics</h3>
+            <p>
+              Le site utilise Google Analytics 4, un service fourni par Google, pour produire des statistiques de
+              fréquentation, comprendre les parcours de navigation et améliorer les performances du service. Google
+              traite les données techniques nécessaires au fonctionnement de cet outil selon ses propres garanties et
+              règles de confidentialité. Le service Analytics reste bloqué tant que vous n’avez pas accepté la
+              catégorie « mesure d’audience ».
+            </p>
+            <p>
+              Google Analytics peut notamment traiter un identifiant de navigateur, les pages consultées, la durée de
+              session, le type d’appareil et une localisation approximative. Les cookies <code>_ga</code> et
+              <code> _ga_&lt;identifiant&gt;</code> peuvent être conservés jusqu’à deux ans. Pour connaître la manière dont
+              Google protège et utilise les données, consultez les{' '}
+              <a href="https://support.google.com/analytics/answer/6004245?hl=fr" target="_blank" rel="noreferrer">
+                informations de confidentialité de Google Analytics
+              </a>{' '}
+              et la{' '}
+              <a href="https://policies.google.com/privacy?hl=fr" target="_blank" rel="noreferrer">
+                politique de confidentialité de Google
+              </a>.
+            </p>
 
-          {/* ---------- COOKIES ---------- */}
-          <h2 id="lg-cookies" style={H2}>Cookies</h2>
-          <p style={P}>
-            Le site utilise différents types de cookies afin d'assurer son bon fonctionnement, d'améliorer
-            l'expérience utilisateur, de mesurer l'audience et, le cas échéant, de proposer des contenus ou
-            communications adaptés aux préférences des visiteurs.
-          </p>
-          <p style={P}>
-            Les cookies strictement nécessaires au fonctionnement du site sont déposés automatiquement. En revanche,
-            les cookies de mesure d'audience, de personnalisation ou de marketing ne sont utilisés qu'après obtention
-            du consentement explicite de l'utilisateur.
-          </p>
-          <p style={{ margin: 0 }}>
-            Lors de sa première visite, l'utilisateur est informé de l'utilisation des cookies par l'intermédiaire
-            d'un bandeau dédié lui permettant d'accepter, de refuser ou de personnaliser ses choix.
-          </p>
-        </div>
+            <h3>Durée et modification du consentement</h3>
+            <p>
+              Votre choix est mémorisé dans le stockage local du navigateur pendant six mois au maximum, puis il vous
+              est demandé à nouveau. Vous pouvez le modifier ou le retirer à tout moment, avec la même simplicité que
+              lors de votre premier choix.
+            </p>
+            <button type="button" className="btn btn-sm btn-outline-green" onClick={openCookiePreferences}>
+              Modifier mes choix de cookies
+            </button>
+          </section>
+        </article>
       </div>
     </section>
   );

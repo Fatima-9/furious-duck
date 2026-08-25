@@ -35,14 +35,14 @@ export default function Footer() {
           </div>
         </div>
         <div>
-          <div className="ttt-footer-heading">Legal</div>
+          <div className="ttt-footer-heading">Légal</div>
           <div className="ttt-footer-links">
-            <Link to={ROUTES.legal}>Reglement du jeu</Link>
-            <Link to={ROUTES.legal}>Mentions legales</Link>
-            <Link to={ROUTES.legal}>Confidentialite (RGPD)</Link>
-            <Link to={ROUTES.legal}>Cookies</Link>
+            <Link to={`${ROUTES.legal}#lg-reglement`}>Règlement du jeu</Link>
+            <Link to={`${ROUTES.legal}#lg-mentions`}>Mentions légales</Link>
+            <Link to={`${ROUTES.legal}#lg-rgpd`}>Confidentialité (RGPD)</Link>
+            <Link to={`${ROUTES.legal}#lg-cookies`}>Cookies</Link>
             <button type="button" className="ttt-footer-linkbtn" onClick={openCookiePreferences}>
-              Gerer les cookies
+              Gérer les cookies
             </button>
           </div>
         </div>
