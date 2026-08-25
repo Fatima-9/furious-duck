@@ -184,7 +184,7 @@ EOF
 VITE_API_URL=https://dev.dsp5-archi-o24a-g2.fr
 EOF
 
-            docker compose -p furious-duck-dev-live -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+            docker compose -p furious-duck-dev-live -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.dev.live.yml up -d --build
           '''
         }
       }
