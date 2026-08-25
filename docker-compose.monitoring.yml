@@ -1,28 +1,30 @@
 services:
   prometheus:
     image: prom/prometheus:v2.55.1
-    container_name: furious_duck_prometheus
-    ports:
-      - "9090:9090"
+    container_name: furious_duck_prometheus_dev
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.external-url=https://dev.dsp5-archi-o24a-g2.fr/prometheus"
+      - "--web.route-prefix=/prometheus"
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    depends_on:
-      - backend
-
-  grafana:
-    image: grafana/grafana:11.3.0
-    container_name: furious_duck_grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-    depends_on:
-      - prometheus
+      - prometheus_data_dev:/prometheus
+    networks:
+      - default
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.prometheus-dev.rule=Host(`dev.dsp5-archi-o24a-g2.fr`) && PathPrefix(`/prometheus`)"
+      - "traefik.http.routers.prometheus-dev.entrypoints=websecure"
+      - "traefik.http.routers.prometheus-dev.tls=true"
+      - "traefik.http.routers.prometheus-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prometheus-dev.loadbalancer.server.port=9090"
 
 volumes:
-  grafana_data:
+  prometheus_data_dev:
+
+networks:
+  traefik_proxy:
+    external: true
