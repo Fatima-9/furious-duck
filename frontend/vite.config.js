@@ -7,6 +7,8 @@ export default defineConfig({
     host: '0.0.0.0',
     allowedHosts: [
       'dev.dsp5-archi-o24a-g2.fr',
+      'dev.dsp5-archi-o24a-g2.com',
+      'furious-duck-dev-live-frontend-1',
     ],
   },
 })

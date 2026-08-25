@@ -35,15 +35,13 @@ services:
 
     labels:
       - "traefik.enable=true"
-
-      - "traefik.http.routers.traefik-dev.rule=Host(`dev.dsp5-archi-o24a-g2.fr`) && PathPrefix(`/traefik`)"
+      - "traefik.http.routers.traefik-dev.rule=(Host(`dev.dsp5-archi-o24a-g2.fr`) || Host(`dev.dsp5-archi-o24a-g2.com`)) && PathPrefix(`/traefik`)"
       - "traefik.http.routers.traefik-dev.priority=600"
       - "traefik.http.routers.traefik-dev.entrypoints=websecure"
       - "traefik.http.routers.traefik-dev.tls=true"
       - "traefik.http.routers.traefik-dev.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-dev.service=api@internal"
       - "traefik.http.routers.traefik-dev.middlewares=traefik-dev-auth"
-
       - "traefik.http.middlewares.traefik-dev-auth.basicauth.users=admin:$$2y$$05$$4w0CnzUEMR78dkFUHLyv8ezZqX1fay9t.Zs65iEDmkEu9MF6qU1ca"
 
 volumes:
