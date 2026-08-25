@@ -1,12 +1,10 @@
 services:
   backend:
     volumes: !reset []
-    ports: !override
-      - "15000:5000"
+    ports: !override []
     command: npm run dev
 
   frontend:
     volumes: !reset []
-    ports: !override
-      - "15173:5173"
+    ports: !override []
     command: npm run dev -- --host 0.0.0.0
