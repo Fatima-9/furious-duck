@@ -18,6 +18,7 @@ services:
       - "traefik.docker.network=traefik_proxy"
 
       - "traefik.http.routers.prometheus-dev.rule=Host(`dev.dsp5-archi-o24a-g2.fr`) && PathPrefix(`/prometheus`)"
+      - "traefik.http.routers.prometheus-dev.priority=200"
       - "traefik.http.routers.prometheus-dev.entrypoints=websecure"
       - "traefik.http.routers.prometheus-dev.tls=true"
       - "traefik.http.routers.prometheus-dev.tls.certresolver=letsencrypt"
