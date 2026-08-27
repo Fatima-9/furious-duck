@@ -16,12 +16,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
-      - "traefik.http.routers.jenkins-dev.rule=(Host(`dev.dsp5-archi-o24a-g2.fr`) || Host(`dev.dsp5-archi-o24a-g2.com`)) && (Path(`/jenkins`) || PathPrefix(`/jenkins/`))"
-      - "traefik.http.routers.jenkins-dev.priority=1000"
-      - "traefik.http.routers.jenkins-dev.entrypoints=websecure"
-      - "traefik.http.routers.jenkins-dev.tls=true"
-      - "traefik.http.routers.jenkins-dev.tls.certresolver=letsencrypt"
-      - "traefik.http.services.jenkins-dev.loadbalancer.server.port=8080"
+      - "traefik.http.routers.jenkins-preprod.rule=(Host(`preprod.dsp5-archi-o24a-g2.fr`) || Host(`preprod.dsp5-archi-o24a-g2.com`)) && (Path(`/jenkins`) || PathPrefix(`/jenkins/`))"
+      - "traefik.http.routers.jenkins-preprod.priority=1000"
+      - "traefik.http.routers.jenkins-preprod.entrypoints=websecure"
+      - "traefik.http.routers.jenkins-preprod.tls=true"
+      - "traefik.http.routers.jenkins-preprod.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jenkins-preprod.loadbalancer.server.port=8080"
 
 volumes:
   jenkins_home:

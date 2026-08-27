@@ -1,39 +1,39 @@
 services:
   prometheus:
     image: prom/prometheus:v2.55.1
-    container_name: furious_duck_prometheus_dev
+    container_name: furious_duck_prometheus_preprod
     restart: unless-stopped
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--web.external-url=https://dev.dsp5-archi-o24a-g2.fr/prometheus"
+      - "--web.external-url=https://preprod.dsp5-archi-o24a-g2.fr/prometheus"
       - "--web.route-prefix=/prometheus"
     volumes:
       - /home/thetiptop_gp2/furious-duck/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data_dev:/prometheus
+      - prometheus_data_preprod:/prometheus
     networks:
       - default
       - traefik_proxy
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
-      - "traefik.http.routers.prometheus-dev.rule=(Host(`dev.dsp5-archi-o24a-g2.fr`) || Host(`dev.dsp5-archi-o24a-g2.com`)) && (Path(`/prometheus`) || PathPrefix(`/prometheus/`))"
-      - "traefik.http.routers.prometheus-dev.priority=1000"
-      - "traefik.http.routers.prometheus-dev.entrypoints=websecure"
-      - "traefik.http.routers.prometheus-dev.tls=true"
-      - "traefik.http.routers.prometheus-dev.tls.certresolver=letsencrypt"
-      - "traefik.http.services.prometheus-dev.loadbalancer.server.port=9090"
+      - "traefik.http.routers.prometheus-preprod.rule=(Host(`preprod.dsp5-archi-o24a-g2.fr`) || Host(`preprod.dsp5-archi-o24a-g2.com`)) && (Path(`/prometheus`) || PathPrefix(`/prometheus/`))"
+      - "traefik.http.routers.prometheus-preprod.priority=1000"
+      - "traefik.http.routers.prometheus-preprod.entrypoints=websecure"
+      - "traefik.http.routers.prometheus-preprod.tls=true"
+      - "traefik.http.routers.prometheus-preprod.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prometheus-preprod.loadbalancer.server.port=9090"
   grafana:
     image: grafana/grafana:11.3.0
-    container_name: furious_duck_grafana_dev
+    container_name: furious_duck_grafana_preprod
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=https://dev.dsp5-archi-o24a-g2.fr/grafana
+      - GF_SERVER_ROOT_URL=https://preprod.dsp5-archi-o24a-g2.fr/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
     volumes:
-      - grafana_data_dev:/var/lib/grafana
+      - grafana_data_preprod:/var/lib/grafana
       - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     networks:
       - default
@@ -41,18 +41,18 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
-      - "traefik.http.routers.grafana-dev.rule=(Host(`dev.dsp5-archi-o24a-g2.fr`) || Host(`dev.dsp5-archi-o24a-g2.com`)) && (Path(`/grafana`) || PathPrefix(`/grafana/`))"
-      - "traefik.http.routers.grafana-dev.priority=1000"
-      - "traefik.http.routers.grafana-dev.entrypoints=websecure"
-      - "traefik.http.routers.grafana-dev.tls=true"
-      - "traefik.http.routers.grafana-dev.tls.certresolver=letsencrypt"
-      - "traefik.http.services.grafana-dev.loadbalancer.server.port=3000"
+      - "traefik.http.routers.grafana-preprod.rule=(Host(`preprod.dsp5-archi-o24a-g2.fr`) || Host(`preprod.dsp5-archi-o24a-g2.com`)) && (Path(`/grafana`) || PathPrefix(`/grafana/`))"
+      - "traefik.http.routers.grafana-preprod.priority=1000"
+      - "traefik.http.routers.grafana-preprod.entrypoints=websecure"
+      - "traefik.http.routers.grafana-preprod.tls=true"
+      - "traefik.http.routers.grafana-preprod.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grafana-preprod.loadbalancer.server.port=3000"
     depends_on:
       - prometheus
 
 volumes:
-  prometheus_data_dev:
-  grafana_data_dev:
+  prometheus_data_preprod:
+  grafana_data_preprod:
 
 networks:
   traefik_proxy:

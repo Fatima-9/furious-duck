@@ -9,7 +9,7 @@ scrape_configs:
       - targets:
           - prometheus:9090
 
-  - job_name: furious-duck-backend-dev
+  - job_name: furious-duck-backend-preprod
     metrics_path: /metrics
     static_configs:
       - targets:

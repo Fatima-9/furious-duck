@@ -144,10 +144,10 @@ EOF
             done
 
             docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
-            node -e "fetch('http://localhost:5000/api/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })" 
+              node -e "fetch('http://localhost:5000/api/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })"
 
             docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
-            node -e "fetch('http://localhost:5000/api/db/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })"
+              node -e "fetch('http://localhost:5000/api/db/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })"
 
             docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend npm run test:integration
           '''
@@ -185,10 +185,51 @@ APP_URL=https://dev.dsp5-archi-o24a-g2.fr
 EOF
 
             cat > frontend/.env <<EOF
-VITE_API_URL=https://dev.dsp5-archi-o24a-g2.fr
+VITE_API_URL=
 EOF
 
-          docker compose -p furious-duck-dev-live -f docker-compose.yml -f docker-compose.dev.live.yml -f docker-compose.monitoring.yml up -d --build --scale backend=2 --scale frontend=2
+            docker compose -p furious-duck-dev-live \
+              -f docker-compose.yml \
+              -f docker-compose.dev.live.yml \
+              -f docker-compose.monitoring.yml \
+              up -d --build --scale backend=2 --scale frontend=2
+          '''
+        }
+      }
+    }
+
+    stage('Deploy PREPROD') {
+      when {
+        expression {
+          return env.GIT_BRANCH == 'origin/PREPROD' || env.BRANCH_NAME == 'PREPROD'
+        }
+      }
+      steps {
+        withCredentials([
+          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
+          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET')
+        ]) {
+          sh '''
+            cat > backend/.env <<EOF
+PORT=5000
+DATABASE_URL=${DATABASE_URL}
+JWT_SECRET=${JWT_SECRET}
+JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+RESET_TOKEN_EXPIRES_IN_MINUTES=${RESET_TOKEN_EXPIRES_IN_MINUTES}
+DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
+DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
+APP_URL=https://preprod.dsp5-archi-o24a-g2.fr
+EOF
+
+            cat > frontend/.env <<EOF
+VITE_API_URL=
+EOF
+
+            docker compose -p furious-duck-preprod-live \
+              -f docker-compose.yml \
+              -f docker-compose.dev.live.yml \
+              -f docker-compose.monitoring.yml \
+              up -d --build --scale backend=2 --scale frontend=2
           '''
         }
       }
