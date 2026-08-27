@@ -8,7 +8,7 @@ services:
       - "--web.external-url=https://dev.dsp5-archi-o24a-g2.fr/prometheus"
       - "--web.route-prefix=/prometheus"
     volumes:
-      - ./monitoring/prometheus:/etc/prometheus:ro
+      - /home/thetiptop_gp2/furious-duck/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data_dev:/prometheus
     networks:
       - default
