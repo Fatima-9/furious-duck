@@ -1,5 +1,6 @@
 import { useGame } from '../../context/useGame';
 import { SEGMENT_LABELS } from '../../data/prizes';
+import { trackParticipationClick } from '../../utils/analytics';
 
 const LABEL_POS = [
   [209.8, 78],
@@ -15,6 +16,11 @@ const LABEL_POS = [
 export default function PrizeWheel() {
   const { rotation, spinDuration, isSpinning, codeValid, ticketCheck, spin } = useGame();
   const disabled = isSpinning || !codeValid;
+
+  function handleSpin() {
+    trackParticipationClick('wheel_spin');
+    spin();
+  }
 
   return (
     <div style={{ position: 'relative', width: 340, height: 340, flex: '0 0 auto' }}>
@@ -108,7 +114,7 @@ export default function PrizeWheel() {
       </svg>
 
       <button
-        onClick={spin}
+        onClick={handleSpin}
         disabled={disabled}
         aria-label="Tourner la roue"
         title={ticketCheck.message || 'Saisissez un code valide'}

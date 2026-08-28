@@ -2,7 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import ContestCountdown from '../components/contest/ContestCountdown';
 import DecorativeWheel from '../components/wheel/DecorativeWheel';
+import { trackParticipationClick } from '../utils/analytics';
 
 const STEPS = [
   {
@@ -146,6 +148,11 @@ const REASSURANCE = [
 export default function Home() {
   const navigate = useNavigate();
 
+  function goToPlay(label) {
+    trackParticipationClick(label);
+    navigate(ROUTES.play);
+  }
+
   return (
     <div>
       {/* HERO */}
@@ -231,13 +238,13 @@ export default function Home() {
                 animation: 'ttt-fadeup .7s .2s both',
               }}
             >
-              Pour fêter l'ouverture de nos 60 boutiques bio, chaque code gagne un lot. Un infuseur, un coffret, une
-              boîte signature… ou un an de thé offert.
+              Pour fêter l'ouverture de nos 10 boutiques bio, chaque code gagne un lot. Un infuseur, un coffret, une
+              boîte signature… et un tirage au sort final permet de gagner un an de thé offert.
             </p>
             <div
               style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 36, animation: 'ttt-fadeup .7s .28s both' }}
             >
-              <Button variant="gold" size="lg" onClick={() => navigate(ROUTES.play)}>
+              <Button variant="gold" size="lg" onClick={() => goToPlay('home_hero')}>
                 ✦ Tenter ma chance
               </Button>
               <Button variant="outline-light" size="lg" style={{ padding: '16px 26px', fontSize: 15 }} onClick={() => navigate(ROUTES.about)}>
@@ -248,6 +255,8 @@ export default function Home() {
           <DecorativeWheel />
         </div>
       </section>
+
+      <ContestCountdown />
 
       {/* ÉTAPES */}
       <section className="ttt-section" style={{ paddingTop: 90, paddingBottom: 40 }}>
@@ -276,7 +285,7 @@ export default function Home() {
             <div className="ttt-eyebrow">La dotation</div>
             <h2 style={{ fontWeight: 600, fontSize: 'clamp(30px,4vw,46px)', margin: 0 }}>Cinq façons de se faire plaisir.</h2>
           </div>
-          <Button variant="outline-green" onClick={() => navigate(ROUTES.play)}>
+          <Button variant="outline-green" onClick={() => goToPlay('home_prizes')}>
             Je participe →
           </Button>
         </div>
