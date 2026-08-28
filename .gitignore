@@ -5,6 +5,7 @@ k8s/secret.yaml
 
 backend/node_modules
 frontend/node_modules
+backend/coverage/
 
 .DS_Store
 Thumbs.db

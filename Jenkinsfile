@@ -110,6 +110,7 @@ EOF
       }
       post {
         always {
+          archiveArtifacts artifacts: 'backend/coverage/**', allowEmptyArchive: true
           sh 'rm -f backend/.env'
         }
       }
