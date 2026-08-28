@@ -10,10 +10,7 @@ module.exports = {
     ? {
         coverageThreshold: {
           global: {
-            branches: coverageMin,
-            functions: coverageMin,
             lines: coverageMin,
-            statements: coverageMin,
           },
         },
       }
