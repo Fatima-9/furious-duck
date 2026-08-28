@@ -33,8 +33,18 @@ async function changeMyPassword(req, res) {
   });
 }
 
+async function deleteMyProfile(req, res) {
+  const user = await profileService.deleteProfile(req.user.id_user);
+
+  return res.json({
+    status: "success",
+    data: { user },
+  });
+}
+
 module.exports = {
   getMyProfile,
   updateMyProfile,
   changeMyPassword,
+  deleteMyProfile,
 };

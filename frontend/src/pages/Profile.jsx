@@ -5,6 +5,7 @@ import { useAuth } from '../context/useAuth';
 import { useGame } from '../context/useGame';
 import {
   createEmployee,
+  deleteMyProfile,
   deleteEmployee,
   exportMyData,
   getBoutiques,
@@ -13,11 +14,13 @@ import {
   getMyGainHistory,
   markTicketAsDelivered,
   updateEmployee,
+  updateMyProfile,
 } from '../services/api';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import StatCard from '../components/ui/StatCard';
+import { FieldRow } from '../components/ui/Field';
 import { canParticipate, getRoleDisplayName, isAdmin } from '../utils/roles';
 
 const staffFiltersInitial = {
@@ -67,7 +70,7 @@ function downloadJson(filename, data) {
 export default function Profile() {
   const navigate = useNavigate();
   const { fireToast } = useGame();
-  const { isAuthenticated, checkingSession, user, refreshProfile } = useAuth();
+  const { isAuthenticated, checkingSession, user, refreshProfile, signOut } = useAuth();
   const [history, setHistory] = useState(null);
   const [staffFiltersDraft, setStaffFiltersDraft] = useState(staffFiltersInitial);
   const [staffFilters, setStaffFilters] = useState(staffFiltersInitial);
@@ -81,6 +84,9 @@ export default function Profile() {
   const [boutiques, setBoutiques] = useState([]);
   const [employeeForm, setEmployeeForm] = useState(employeeFormInitial);
   const [savingEmployee, setSavingEmployee] = useState(false);
+  const [profileDraft, setProfileDraft] = useState({});
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [deletingProfile, setDeletingProfile] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -139,6 +145,48 @@ export default function Profile() {
     }
   }
 
+  function updateProfileForm(field, value) {
+    setProfileDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  async function submitProfile(event) {
+    event.preventDefault();
+    setSavingProfile(true);
+
+    try {
+      await updateMyProfile(profileForm);
+      await refreshProfile();
+      setProfileDraft({});
+      fireToast('Informations modifiees.');
+    } catch (error) {
+      fireToast(error.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function removeMyProfile() {
+    if (isAdmin(user)) {
+      fireToast('Le compte administrateur ne peut pas etre supprime.');
+      return;
+    }
+
+    if (!window.confirm('Supprimer votre compte ? Cette action desactive votre compte.')) return;
+
+    setDeletingProfile(true);
+
+    try {
+      await deleteMyProfile();
+      signOut();
+      fireToast('Votre compte a ete supprime.');
+      navigate(ROUTES.home, { replace: true });
+    } catch (error) {
+      fireToast(error.message);
+    } finally {
+      setDeletingProfile(false);
+    }
+  }
+
   if (checkingSession || !isAuthenticated) {
     return (
       <section className="ttt-section" style={{ paddingTop: 80, paddingBottom: 100, textAlign: 'center' }}>
@@ -149,6 +197,13 @@ export default function Profile() {
 
   const firstName = user?.prenom || user?.email || 'Utilisateur';
   const initial = firstName.charAt(0).toUpperCase();
+  const profileForm = {
+    nom: profileDraft.nom ?? user?.nom ?? '',
+    prenom: profileDraft.prenom ?? user?.prenom ?? '',
+    email: profileDraft.email ?? user?.email ?? '',
+    date_de_naissance: profileDraft.date_de_naissance ?? (user?.date_de_naissance ? String(user.date_de_naissance).slice(0, 10) : ''),
+    sexe: profileDraft.sexe ?? user?.sexe ?? '',
+  };
   const gains = history || [];
   const pendingCount = gains.filter((item) => !item.remis).length;
   const roleName = getRoleDisplayName(user);
@@ -624,11 +679,25 @@ export default function Profile() {
       <div className="ttt-cols-2-tight">
         <Card>
           <h3 style={{ margin: '0 0 14px', fontSize: 15 }}>Mes informations</h3>
-          <div style={{ fontSize: 13.5, color: 'var(--ink-soft)', lineHeight: 2 }}>
-            {user?.prenom} {user?.nom}
-            <br />
-            {user?.email}
-          </div>
+          <form onSubmit={submitProfile} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <FieldRow>
+              <input className="ttt-table-filter" required placeholder="Prenom" value={profileForm.prenom} onChange={(event) => updateProfileForm('prenom', event.target.value)} />
+              <input className="ttt-table-filter" required placeholder="Nom" value={profileForm.nom} onChange={(event) => updateProfileForm('nom', event.target.value)} />
+            </FieldRow>
+            <input className="ttt-table-filter" required type="email" placeholder="Email" value={profileForm.email} onChange={(event) => updateProfileForm('email', event.target.value)} />
+            <FieldRow>
+              <input className="ttt-table-filter" type="date" value={profileForm.date_de_naissance} onChange={(event) => updateProfileForm('date_de_naissance', event.target.value)} />
+              <select className="ttt-table-filter" value={profileForm.sexe} onChange={(event) => updateProfileForm('sexe', event.target.value)}>
+                <option value="">Non precise</option>
+                <option value="F">Femme</option>
+                <option value="M">Homme</option>
+                <option value="N">Non precise</option>
+              </select>
+            </FieldRow>
+            <Button type="submit" variant="solid" size="sm" disabled={savingProfile}>
+              {savingProfile ? 'Modification...' : 'Modifier mes informations'}
+            </Button>
+          </form>
         </Card>
         <Card>
           <h3 style={{ margin: '0 0 14px', fontSize: 15 }}>Confidentialite (RGPD)</h3>
@@ -638,6 +707,16 @@ export default function Profile() {
           <Button variant="ghost" size="sm" onClick={handleExport}>
             Exporter mes donnees
           </Button>
+          <div style={{ marginTop: 12 }}>
+            <Button variant="danger" size="sm" disabled={isAdmin(user) || deletingProfile} onClick={removeMyProfile}>
+              {deletingProfile ? 'Suppression...' : 'Supprimer mon compte'}
+            </Button>
+          </div>
+          {isAdmin(user) && (
+            <p style={{ margin: '10px 0 0', fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5 }}>
+              Le compte administrateur ne peut pas etre supprime.
+            </p>
+          )}
         </Card>
       </div>
     </section>

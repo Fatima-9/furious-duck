@@ -11,6 +11,7 @@ router.use(authenticate);
 router.get("/me", profileController.getMyProfile);
 router.patch("/me", profileController.updateMyProfile);
 router.patch("/me/password", profileController.changeMyPassword);
+router.delete("/me", profileController.deleteMyProfile);
 
 // Droit a la portabilite (RGPD art. 20) : chacun recupere ses propres donnees.
 router.get("/me/export", exportController.exportMyData);
