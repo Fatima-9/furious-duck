@@ -11,6 +11,7 @@ describe("authValidation", () => {
       prenom: " Furious ",
       email: " USER@Example.COM ",
       password: "Password123!",
+      date_de_naissance: "1990-01-01",
     });
 
     expect(payload).toMatchObject({
@@ -25,9 +26,9 @@ describe("authValidation", () => {
   test("rejects an invalid email", () => {
     expect(() =>
       validateLoginPayload({
-        email: "not-an-email",
-        mot_de_passe: "Password123!",
-      })
+      email: "not-an-email",
+      mot_de_passe: "Password123!",
+    })
     ).toThrow("email must be valid");
   });
 
@@ -38,6 +39,7 @@ describe("authValidation", () => {
         prenom: "Furious",
         email: "user@example.com",
         mot_de_passe: "short",
+        date_de_naissance: "1990-01-01",
       })
     ).toThrow("mot_de_passe must contain at least 8 characters");
   });
@@ -47,6 +49,7 @@ describe("authValidation", () => {
       nom: "Duck",
       prenom: "Furious",
       email: "user@example.com",
+      date_de_naissance: "1990-01-01",
     };
 
     expect(() =>
@@ -76,6 +79,21 @@ describe("authValidation", () => {
       provider: "google",
       token: "token-value",
     });
+  });
+
+  test("rejects register payload when user is under 18", () => {
+    const birthDate = new Date();
+    birthDate.setFullYear(birthDate.getFullYear() - 17);
+
+    expect(() =>
+      validateRegisterPayload({
+        nom: "Duck",
+        prenom: "Furious",
+        email: "user@example.com",
+        mot_de_passe: "Password123!",
+        date_de_naissance: birthDate.toISOString().slice(0, 10),
+      })
+    ).toThrow("Vous devez avoir au moins 18 ans pour participer.");
   });
 
   test("rejects an unknown oauth provider", () => {

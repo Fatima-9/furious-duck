@@ -17,6 +17,10 @@ const initialForm = {
   mot_de_passe: '',
 };
 
+const adultBirthDateLimit = new Date();
+adultBirthDateLimit.setFullYear(adultBirthDateLimit.getFullYear() - 18);
+const adultBirthDateMax = adultBirthDateLimit.toISOString().slice(0, 10);
+
 export default function Auth() {
   const [mode, setMode] = useState('signup');
   const [form, setForm] = useState(initialForm);
@@ -152,7 +156,7 @@ export default function Auth() {
                 <Input label="Nom" required placeholder="Martin" value={form.nom} onChange={(event) => updateField('nom', event.target.value)} />
               </FieldRow>
               <FieldRow>
-                <Input label="Date de naissance" type="date" required value={form.date_de_naissance} onChange={(event) => updateField('date_de_naissance', event.target.value)} />
+                <Input label="Date de naissance" type="date" required max={adultBirthDateMax} value={form.date_de_naissance} onChange={(event) => updateField('date_de_naissance', event.target.value)} />
                 <Select label="Sexe" required value={form.sexe} onChange={(event) => updateField('sexe', event.target.value)}>
                   <option value="" disabled>
                     Choisir...

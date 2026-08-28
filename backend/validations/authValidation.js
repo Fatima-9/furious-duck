@@ -43,10 +43,33 @@ function validatePassword(password) {
   }
 }
 
+function validateAdultBirthDate(value) {
+  validateRequiredString(value, "date_de_naissance");
+
+  const birthDate = new Date(value);
+  if (Number.isNaN(birthDate.getTime())) {
+    throw new ApiError(400, "date_de_naissance must be a valid date");
+  }
+
+  const today = new Date();
+  const minimumBirthDate = new Date(
+    today.getFullYear() - 18,
+    today.getMonth(),
+    today.getDate()
+  );
+
+  if (birthDate > minimumBirthDate) {
+    throw new ApiError(400, "Vous devez avoir au moins 18 ans pour participer.");
+  }
+
+  return value;
+}
+
 function validateRegisterPayload(body) {
   validateRequiredString(body.nom, "nom");
   validateRequiredString(body.prenom, "prenom");
   validateEmail(body.email);
+  const birthDate = validateAdultBirthDate(body.date_de_naissance);
 
   const password = getPassword(body);
   validatePassword(password);
@@ -56,7 +79,7 @@ function validateRegisterPayload(body) {
     prenom: body.prenom.trim(),
     email: body.email.trim().toLowerCase(),
     mot_de_passe: password,
-    date_de_naissance: body.date_de_naissance,
+    date_de_naissance: birthDate,
     sexe: body.sexe,
     type_inscription: body.type_inscription || "email",
   };
@@ -96,5 +119,6 @@ module.exports = {
   validateOAuthPayload,
   validateEmail,
   validatePassword,
+  validateAdultBirthDate,
   validateRequiredString,
 };
