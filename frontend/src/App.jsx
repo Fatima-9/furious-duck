@@ -14,6 +14,9 @@ import Stats from './pages/Stats';
 import Faq from './pages/Faq';
 import Contact from './pages/Contact';
 import Legal from './pages/Legal';
+import SiteMap from './pages/SiteMap';
+import ServerError from './pages/ServerError';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -33,6 +36,9 @@ function App() {
         <Route path={ROUTES.faq} element={<Faq />} />
         <Route path={ROUTES.contact} element={<Contact />} />
         <Route path={ROUTES.legal} element={<Legal />} />
+        <Route path={ROUTES.siteMap} element={<SiteMap />} />
+        <Route path={ROUTES.serverError} element={<ServerError />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

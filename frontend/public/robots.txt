@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dsp5-archi-o24a-g2.fr/sitemap.xml
