@@ -86,6 +86,14 @@ export async function requestPasswordReset(email) {
   });
 }
 
+export async function subscribeNewsletter(email) {
+  return apiRequest('/api/newsletter', {
+    method: 'POST',
+    body: { email },
+    token: null,
+  });
+}
+
 export async function resetPassword(token, mot_de_passe) {
   return apiRequest('/api/auth/reset-password', {
     method: 'POST',
