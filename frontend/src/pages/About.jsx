@@ -3,9 +3,15 @@ import { ROUTES } from '../routes';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import FaqItem from '../components/ui/FaqItem';
+import { trackParticipationClick } from '../utils/analytics';
 
 export default function About() {
   const navigate = useNavigate();
+
+  function goToPlay() {
+    trackParticipationClick('about_rules');
+    navigate(ROUTES.play);
+  }
 
   return (
     <div>
@@ -19,7 +25,7 @@ export default function About() {
             Le thé bio, célébré comme il se doit.
           </h1>
           <p style={{ maxWidth: 620, margin: '22px auto 0', fontSize: 18, lineHeight: 1.65, color: 'rgba(255,255,255,.82)' }}>
-            Thé Tip Top ouvre 60 boutiques à travers la France. Pour partager ce moment, nous offrons un lot à chaque
+            Thé Tip Top ouvre 10 boutiques à travers la France. Pour partager ce moment, nous offrons un lot à chaque
             participant — une façon simple de vous remercier et de vous faire découvrir nos infusions.
           </p>
         </div>
@@ -73,7 +79,7 @@ export default function About() {
       <section className="ttt-section">
         <div className="ttt-auto-fit-240">
           <Card>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, color: 'var(--gold)' }}>60</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, color: 'var(--gold)' }}>10</div>
             <h3 style={{ margin: '6px 0 6px', fontSize: 16 }}>boutiques</h3>
             <p style={{ margin: 0, fontSize: 13.5, color: 'var(--muted)' }}>Un réseau national, du producteur à votre quartier.</p>
           </Card>
@@ -102,10 +108,14 @@ export default function About() {
           Sur votre ticket de caisse en boutique, ou à l'intérieur de chaque boîte de thé Tip Top.
         </FaqItem>
         <FaqItem question="Jusqu'à quand ?">
-          L'opération se déroule du 1ᵉʳ mars au 30 septembre 2026. Les lots sont à retirer sous 60 jours.
+          L'opération se déroule du 1 septembre au 30 septembre 2026. Les lots sont à réclamer jusqu'au 30 octobre 2026.
+        </FaqItem>
+        <FaqItem question="Quel est le gros lot ?">
+          À l'issue du jeu-concours, un tirage au sort est effectué parmi tous les participants afin de déterminer le
+          gagnant d'un an de thé, d'une valeur de 360 €.
         </FaqItem>
         <div style={{ textAlign: 'center', marginTop: 28 }}>
-          <Button variant="solid" size="lg" style={{ padding: '15px 30px', fontSize: 15 }} onClick={() => navigate(ROUTES.play)}>
+          <Button variant="solid" size="lg" style={{ padding: '15px 30px', fontSize: 15 }} onClick={goToPlay}>
             Je participe maintenant
           </Button>
         </div>

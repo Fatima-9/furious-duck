@@ -24,7 +24,7 @@ export default function Faq() {
         </FaqItem>
         <FaqItem question="Comment récupérer mon lot ?">
           Après le tirage, un e-mail de confirmation vous est envoyé avec un code de retrait. Présentez-le en boutique
-          ou optez pour la livraison à domicile. Vous avez 60 jours pour en profiter.
+          ou optez pour la livraison à domicile. Vous avez jusqu'au 30 octobre 2026 pour en profiter.
         </FaqItem>
         <FaqItem question="Puis-je participer plusieurs fois ?">
           Oui, autant de fois que vous avez de codes valides. Chaque code n'est utilisable qu'une seule fois.

@@ -14,7 +14,7 @@ export default function Footer() {
             <span>The Tip Top</span>
           </div>
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, maxWidth: 280 }}>
-            Maison de the bio. Jeu-concours 100 % gagnant pour celebrer l'ouverture de nos 60 boutiques.
+            Maison de the bio. Jeu-concours 100 % gagnant pour celebrer l'ouverture de nos 10 boutiques.
           </p>
         </div>
         <div>
