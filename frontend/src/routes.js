@@ -11,4 +11,6 @@ export const ROUTES = {
   faq: "/faq",
   contact: "/contact",
   legal: "/mentions-legales",
+  siteMap: "/plan-du-site",
+  serverError: "/erreur-serveur",
 };

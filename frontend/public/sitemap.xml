@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://dsp5-archi-o24a-g2.fr/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://dsp5-archi-o24a-g2.fr/le-concept</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://dsp5-archi-o24a-g2.fr/participer</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://dsp5-archi-o24a-g2.fr/statistiques</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://dsp5-archi-o24a-g2.fr/faq</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://dsp5-archi-o24a-g2.fr/contact</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://dsp5-archi-o24a-g2.fr/mentions-legales</loc>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://dsp5-archi-o24a-g2.fr/plan-du-site</loc>
+    <priority>0.5</priority>
+  </url>
+</urlset>

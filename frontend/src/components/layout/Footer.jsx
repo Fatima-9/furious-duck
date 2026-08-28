@@ -32,6 +32,7 @@ export default function Footer() {
             <Link to={ROUTES.contact}>Contact</Link>
             <Link to={ROUTES.profile}>Mon espace</Link>
             <Link to={ROUTES.auth}>Connexion / inscription</Link>
+            <Link to={ROUTES.siteMap}>Plan du site</Link>
           </div>
         </div>
         <div>
