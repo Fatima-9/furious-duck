@@ -1,5 +1,6 @@
 const authService = require("../services/authService");
 const passwordResetService = require("../services/passwordResetService");
+const { verifyTurnstileToken } = require("../services/turnstileService");
 const {
   validateRegisterPayload,
   validateLoginPayload,
@@ -12,7 +13,10 @@ const {
 
 async function register(req, res) {
   const payload = validateRegisterPayload(req.body);
-  const result = await authService.register(payload);
+  const { turnstile_token: turnstileToken, ...registerPayload } = payload;
+  await verifyTurnstileToken(turnstileToken, req.ip);
+
+  const result = await authService.register(registerPayload);
 
   return res.status(201).json({
     status: "success",
@@ -22,7 +26,10 @@ async function register(req, res) {
 
 async function login(req, res) {
   const payload = validateLoginPayload(req.body);
-  const result = await authService.login(payload);
+  const { turnstile_token: turnstileToken, ...loginPayload } = payload;
+  await verifyTurnstileToken(turnstileToken, req.ip);
+
+  const result = await authService.login(loginPayload);
 
   return res.json({
     status: "success",

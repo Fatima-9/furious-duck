@@ -72,6 +72,7 @@ describeIfDatabase("auth and profile API flow", () => {
         mot_de_passe: "Password123!",
         role_id,
         boutique_id,
+        turnstile_token: "test-turnstile-token",
       })
       .expect(201);
 
@@ -109,6 +110,7 @@ describeIfDatabase("auth and profile API flow", () => {
       .send({
         email,
         mot_de_passe: "NewPassword123!",
+        turnstile_token: "test-turnstile-token",
       })
       .expect(200);
 
@@ -142,6 +144,7 @@ describeIfDatabase("auth and profile API flow", () => {
       .send({
         email,
         mot_de_passe: "FinalPassword123!",
+        turnstile_token: "test-turnstile-token",
       })
       .expect(200);
   });

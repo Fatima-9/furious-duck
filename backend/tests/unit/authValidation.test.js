@@ -11,6 +11,7 @@ describe("authValidation", () => {
       prenom: " Furious ",
       email: " USER@Example.COM ",
       password: "Password123!",
+      turnstile_token: "test-turnstile-token",
     });
 
     expect(payload).toMatchObject({
@@ -25,9 +26,10 @@ describe("authValidation", () => {
   test("rejects an invalid email", () => {
     expect(() =>
       validateLoginPayload({
-        email: "not-an-email",
-        mot_de_passe: "Password123!",
-      })
+      email: "not-an-email",
+      mot_de_passe: "Password123!",
+      turnstile_token: "test-turnstile-token",
+    })
     ).toThrow("email must be valid");
   });
 
@@ -38,6 +40,7 @@ describe("authValidation", () => {
         prenom: "Furious",
         email: "user@example.com",
         mot_de_passe: "short",
+        turnstile_token: "test-turnstile-token",
       })
     ).toThrow("mot_de_passe must contain at least 8 characters");
   });
@@ -47,6 +50,7 @@ describe("authValidation", () => {
       nom: "Duck",
       prenom: "Furious",
       email: "user@example.com",
+      turnstile_token: "test-turnstile-token",
     };
 
     expect(() =>

@@ -103,6 +103,14 @@ export async function oauthLogin(payload) {
   return response.data;
 }
 
+export async function sendContactMessage(payload) {
+  return apiRequest('/api/contact', {
+    method: 'POST',
+    body: payload,
+    token: null,
+  });
+}
+
 export async function getMyProfile() {
   const response = await apiRequest('/api/users/me');
   return response.data.user;
