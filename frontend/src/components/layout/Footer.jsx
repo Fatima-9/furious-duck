@@ -1,10 +1,32 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../routes';
+import { subscribeNewsletter } from '../../services/api';
 import { openCookiePreferences } from '../cookies/cookieConsent';
 import logoEmblemLight from '../../assets/brand/logo-emblem-light.png';
 import './layout.css';
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [newsletterMessage, setNewsletterMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submitNewsletter(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setNewsletterMessage('');
+
+    try {
+      await subscribeNewsletter(email);
+      setEmail('');
+      setNewsletterMessage('Inscription confirmee.');
+    } catch (error) {
+      setNewsletterMessage(error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <footer className="ttt-footer">
       <div className="ttt-footer-grid">
@@ -32,6 +54,35 @@ export default function Footer() {
             <Link to={ROUTES.contact}>Contact</Link>
             <Link to={ROUTES.profile}>Mon espace</Link>
             <Link to={ROUTES.auth}>Connexion / inscription</Link>
+          </div>
+        </div>
+        <div>
+          <div className="ttt-footer-heading">Newsletter</div>
+          <form onSubmit={submitNewsletter} style={{ display: 'grid', gap: 10 }}>
+            <input
+              required
+              type="email"
+              placeholder="votre@email.fr"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              style={{
+                width: '100%',
+                border: '1px solid rgba(255,255,255,.18)',
+                borderRadius: 10,
+                padding: '11px 12px',
+                background: 'rgba(255,255,255,.08)',
+                color: '#fff',
+              }}
+            />
+            <button type="submit" className="ttt-footer-linkbtn" disabled={submitting} style={{ textAlign: 'left' }}>
+              {submitting ? 'Inscription...' : "S'inscrire"}
+            </button>
+            {newsletterMessage && <span style={{ fontSize: 12.5, color: 'var(--gold-soft)' }}>{newsletterMessage}</span>}
+          </form>
+          <div className="ttt-footer-links" style={{ marginTop: 16 }}>
+            <a href="https://www.instagram.com/" target="_blank" rel="noreferrer">Instagram</a>
+            <a href="https://www.facebook.com/" target="_blank" rel="noreferrer">Facebook</a>
+            <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a>
           </div>
         </div>
         <div>
