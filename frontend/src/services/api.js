@@ -108,6 +108,21 @@ export async function getMyProfile() {
   return response.data.user;
 }
 
+export async function updateMyProfile(payload) {
+  const response = await apiRequest('/api/users/me', {
+    method: 'PATCH',
+    body: payload,
+  });
+  return response.data.user;
+}
+
+export async function deleteMyProfile() {
+  const response = await apiRequest('/api/users/me', {
+    method: 'DELETE',
+  });
+  return response.data.user;
+}
+
 export async function getMyGainHistory() {
   const response = await apiRequest('/api/tickets/me/history');
   return response.data.gains;

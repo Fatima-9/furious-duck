@@ -65,8 +65,25 @@ async function changePassword(userId, { mot_de_passe_actuel, mot_de_passe }) {
   }
 }
 
+async function deleteProfile(userId) {
+  const user = await Utilisateur.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "user not found");
+  }
+
+  if (Number(user.role_id) === Number(process.env.ADMIN_ROLE_ID || 2)) {
+    throw new ApiError(403, "admin account cannot be deleted");
+  }
+
+  const deletedUser = await Utilisateur.update(userId, { statut: "supprime" });
+
+  return sanitizeUser(deletedUser);
+}
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
+  deleteProfile,
 };
