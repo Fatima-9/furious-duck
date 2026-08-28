@@ -70,6 +70,7 @@ describeIfDatabase("auth and profile API flow", () => {
         prenom: "Test",
         email,
         mot_de_passe: "Password123!",
+        date_de_naissance: "1990-01-01",
         role_id,
         boutique_id,
         turnstile_token: "test-turnstile-token",
