@@ -18,6 +18,7 @@ pipeline {
     RESET_TOKEN_EXPIRES_IN_MINUTES = '60'
     DEFAULT_USER_ROLE_ID = '1'
     DEFAULT_BOUTIQUE_ID = '1'
+    DOCKER_IMAGE_BACKUP_DIR = "${WORKSPACE}/docker-image-backups/${BUILD_NUMBER}"
   }
 
   stages {
@@ -27,99 +28,68 @@ pipeline {
       }
     }
 
-    stage('Backend - Install') {
+    stage('Prepare Pipeline Rules') {
+      steps {
+        script {
+          def branch = env.BRANCH_NAME ?: env.GIT_BRANCH?.replace('origin/', '')
+
+          if (branch == 'main' || branch == 'PROD') {
+            env.COVERAGE_MIN = '100'
+            env.DEPLOY_ENV = 'prod'
+            env.APP_URL = 'https://dsp5-archi-o24a-g2.fr'
+            env.COMPOSE_PROJECT_NAME = 'furious-duck-prod-live'
+          } else if (branch == 'PREPROD') {
+            env.COVERAGE_MIN = '80'
+            env.DEPLOY_ENV = 'preprod'
+            env.APP_URL = 'https://preprod.dsp5-archi-o24a-g2.fr'
+            env.COMPOSE_PROJECT_NAME = 'furious-duck-preprod-live'
+          } else {
+            env.COVERAGE_MIN = '60'
+            env.DEPLOY_ENV = 'dev'
+            env.APP_URL = 'https://dev.dsp5-archi-o24a-g2.fr'
+            env.COMPOSE_PROJECT_NAME = 'furious-duck-dev-live'
+          }
+
+          echo "Branch: ${branch}"
+          echo "Deploy environment: ${env.DEPLOY_ENV}"
+          echo "Coverage threshold: ${env.COVERAGE_MIN}%"
+        }
+      }
+    }
+
+    stage('Install Dependencies') {
       steps {
         dir('backend') {
           sh 'npm ci'
         }
-      }
-    }
 
-    stage('Backend - Syntax Check') {
-      steps {
-        dir('backend') {
-          sh 'find . -path ./node_modules -prune -o -name "*.js" -print -exec node --check {} \\;'
-        }
-      }
-    }
-
-    stage('Backend - Unit Tests') {
-      environment {
-        JWT_SECRET = 'jenkins-unit-test-secret'
-      }
-      steps {
-        dir('backend') {
-          sh 'npm run test:unit'
-        }
-      }
-    }
-
-    stage('Backend - Integration Tests') {
-      steps {
-        withCredentials([
-          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
-          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET')
-        ]) {
-          dir('backend') {
-            sh '''
-              cat > .env <<EOF
-PORT=5000
-DATABASE_URL=${DATABASE_URL}
-JWT_SECRET=${JWT_SECRET}
-JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-RESET_TOKEN_EXPIRES_IN_MINUTES=${RESET_TOKEN_EXPIRES_IN_MINUTES}
-DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
-DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
-EOF
-
-              npm run test:integration
-            '''
-          }
-        }
-      }
-      post {
-        always {
-          sh 'rm -f backend/.env'
-        }
-      }
-    }
-
-    stage('Frontend - Install') {
-      steps {
         dir('frontend') {
           sh 'npm ci'
         }
       }
     }
 
-    stage('Frontend - Lint') {
+    stage('Quality Checks') {
       steps {
+        dir('backend') {
+          sh 'find . -path ./node_modules -prune -o -name "*.js" -print -exec node --check {} \\;'
+        }
+
         dir('frontend') {
           sh 'npm run lint'
         }
       }
     }
 
-    stage('Frontend - Build') {
-      steps {
-        dir('frontend') {
-          sh 'npm run build'
-        }
+    stage('Application Tests And Coverage') {
+      environment {
+        NODE_ENV = 'test'
       }
-    }
-
-    stage('Docker - Build Images') {
-      steps {
-        sh 'docker build -t "$BACKEND_IMAGE" ./backend'
-        sh 'docker build -t "$FRONTEND_IMAGE" ./frontend'
-      }
-    }
-
-    stage('Docker Compose - Functional Tests') {
       steps {
         withCredentials([
           string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
-          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET')
+          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET'),
+          string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY')
         ]) {
           sh '''
             cat > backend/.env <<EOF
@@ -130,24 +100,106 @@ JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
 RESET_TOKEN_EXPIRES_IN_MINUTES=${RESET_TOKEN_EXPIRES_IN_MINUTES}
 DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
 DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
+TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
+EOF
+
+            cd backend
+            COVERAGE_MIN=${COVERAGE_MIN} npm run test:coverage
+          '''
+        }
+      }
+      post {
+        always {
+          sh 'rm -f backend/.env'
+        }
+      }
+    }
+
+    stage('Frontend Build') {
+      steps {
+        withCredentials([
+          string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY')
+        ]) {
+          dir('frontend') {
+            sh '''
+              cat > .env <<EOF
+VITE_API_URL=
+VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY}
+EOF
+
+              npm run build
+            '''
+          }
+        }
+      }
+      post {
+        always {
+          sh 'rm -f frontend/.env'
+        }
+      }
+    }
+
+    stage('Docker Build Images') {
+      steps {
+        sh 'docker build -t "$BACKEND_IMAGE" -f backend/Dockerfile.live ./backend'
+        sh 'docker build -t "$FRONTEND_IMAGE" -f frontend/Dockerfile.live ./frontend'
+      }
+    }
+
+    stage('Docker Image Backup') {
+      steps {
+        sh '''
+          mkdir -p "${DOCKER_IMAGE_BACKUP_DIR}"
+          docker save "$BACKEND_IMAGE" -o "${DOCKER_IMAGE_BACKUP_DIR}/backend-${BUILD_NUMBER}.tar"
+          docker save "$FRONTEND_IMAGE" -o "${DOCKER_IMAGE_BACKUP_DIR}/frontend-${BUILD_NUMBER}.tar"
+          ls -lh "${DOCKER_IMAGE_BACKUP_DIR}"
+        '''
+      }
+    }
+
+    stage('Docker Compose Functional Tests') {
+      steps {
+        withCredentials([
+          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
+          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET'),
+          string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY')
+        ]) {
+          sh '''
+            cat > backend/.env <<EOF
+PORT=5000
+DATABASE_URL=${DATABASE_URL}
+JWT_SECRET=${JWT_SECRET}
+JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+RESET_TOKEN_EXPIRES_IN_MINUTES=${RESET_TOKEN_EXPIRES_IN_MINUTES}
+DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
+DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
+TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
+EOF
+
+            cat > frontend/.env <<EOF
+VITE_API_URL=
 EOF
 
             docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
+            BACKEND_READY=0
             for i in $(seq 1 30); do
               if docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
-                node -e "fetch('http://localhost:5000/api/health').then(r => { if (!r.ok) process.exit(1); process.exit(0) }).catch(() => process.exit(1))"
+                node -e "fetch('http://localhost:5000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
               then
+                BACKEND_READY=1
                 break
               fi
               sleep 2
             done
 
-            docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
-              node -e "fetch('http://localhost:5000/api/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })"
+            if [ "$BACKEND_READY" != "1" ]; then
+              echo "Backend health check failed"
+              exit 1
+            fi
 
             docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
-              node -e "fetch('http://localhost:5000/api/db/health').then(async r => { console.log(await r.text()); if (!r.ok) process.exit(1) }).catch(e => { console.error(e); process.exit(1) })"
+              node -e "fetch('http://localhost:5000/api/db/health').then(async r => { console.log(await r.text()); process.exit(r.ok ? 0 : 1) }).catch(e => { console.error(e); process.exit(1) })"
 
             docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend npm run test:integration
           '''
@@ -156,7 +208,7 @@ EOF
       post {
         always {
           sh 'docker compose -f docker-compose.yml -f docker-compose.ci.yml down || true'
-          sh 'rm -f backend/.env'
+          sh 'rm -f backend/.env frontend/.env'
         }
       }
     }
@@ -164,36 +216,12 @@ EOF
     stage('Deploy DEV') {
       when {
         expression {
-          return env.GIT_BRANCH == 'origin/DEV' || env.BRANCH_NAME == 'DEV'
+          return env.DEPLOY_ENV == 'dev'
         }
       }
       steps {
-        withCredentials([
-          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
-          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET')
-        ]) {
-          sh '''
-            cat > backend/.env <<EOF
-PORT=5000
-DATABASE_URL=${DATABASE_URL}
-JWT_SECRET=${JWT_SECRET}
-JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-RESET_TOKEN_EXPIRES_IN_MINUTES=${RESET_TOKEN_EXPIRES_IN_MINUTES}
-DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
-DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
-APP_URL=https://dev.dsp5-archi-o24a-g2.fr
-EOF
-
-            cat > frontend/.env <<EOF
-VITE_API_URL=
-EOF
-
-            docker compose -p furious-duck-dev-live \
-              -f docker-compose.yml \
-              -f docker-compose.dev.live.yml \
-              -f docker-compose.monitoring.yml \
-              up -d --build --scale backend=2 --scale frontend=2
-          '''
+        script {
+          deployEnvironment()
         }
       }
     }
@@ -201,16 +229,38 @@ EOF
     stage('Deploy PREPROD') {
       when {
         expression {
-          return env.GIT_BRANCH == 'origin/PREPROD' || env.BRANCH_NAME == 'PREPROD'
+          return env.DEPLOY_ENV == 'preprod'
         }
       }
       steps {
-        withCredentials([
-          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
-          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET')
-        ]) {
-          sh '''
-            cat > backend/.env <<EOF
+        script {
+          deployEnvironment()
+        }
+      }
+    }
+
+    stage('Deploy PROD') {
+      when {
+        expression {
+          return env.DEPLOY_ENV == 'prod'
+        }
+      }
+      steps {
+        echo 'PROD deployment is not configured yet. Coverage is checked at 100%, but deployment is intentionally skipped.'
+      }
+    }
+  }
+}
+
+def deployEnvironment() {
+  withCredentials([
+    string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
+    string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET'),
+    string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY'),
+    string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY')
+  ]) {
+    sh '''
+      cat > backend/.env <<EOF
 PORT=5000
 DATABASE_URL=${DATABASE_URL}
 JWT_SECRET=${JWT_SECRET}
@@ -218,21 +268,20 @@ JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
 RESET_TOKEN_EXPIRES_IN_MINUTES=${RESET_TOKEN_EXPIRES_IN_MINUTES}
 DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
 DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
-APP_URL=https://preprod.dsp5-archi-o24a-g2.fr
+TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
+APP_URL=${APP_URL}
 EOF
 
-            cat > frontend/.env <<EOF
+      cat > frontend/.env <<EOF
 VITE_API_URL=
+VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY}
 EOF
 
-            docker compose -p furious-duck-preprod-live \
-              -f docker-compose.yml \
-              -f docker-compose.dev.live.yml \
-              -f docker-compose.monitoring.yml \
-              up -d --build --scale backend=2 --scale frontend=2
-          '''
-        }
-      }
-    }
+      docker compose -p "${COMPOSE_PROJECT_NAME}" \
+        -f docker-compose.yml \
+        -f docker-compose.dev.live.yml \
+        -f docker-compose.monitoring.yml \
+        up -d --build --scale backend=2 --scale frontend=2
+    '''
   }
 }
