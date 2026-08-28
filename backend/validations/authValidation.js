@@ -19,6 +19,10 @@ function getPassword(body) {
   return body.mot_de_passe || body.password;
 }
 
+function getTurnstileToken(body) {
+  return body.turnstile_token || body.turnstileToken;
+}
+
 function validatePassword(password) {
   validateRequiredString(password, "mot_de_passe");
 
@@ -51,6 +55,9 @@ function validateRegisterPayload(body) {
   const password = getPassword(body);
   validatePassword(password);
 
+  const turnstileToken = getTurnstileToken(body);
+  validateRequiredString(turnstileToken, "turnstile_token");
+
   return {
     nom: body.nom.trim(),
     prenom: body.prenom.trim(),
@@ -59,6 +66,7 @@ function validateRegisterPayload(body) {
     date_de_naissance: body.date_de_naissance,
     sexe: body.sexe,
     type_inscription: body.type_inscription || "email",
+    turnstile_token: turnstileToken.trim(),
   };
 }
 
@@ -68,9 +76,13 @@ function validateLoginPayload(body) {
   const password = getPassword(body);
   validateRequiredString(password, "mot_de_passe");
 
+  const turnstileToken = getTurnstileToken(body);
+  validateRequiredString(turnstileToken, "turnstile_token");
+
   return {
     email: body.email.trim().toLowerCase(),
     mot_de_passe: password,
+    turnstile_token: turnstileToken.trim(),
   };
 }
 

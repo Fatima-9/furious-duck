@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
 import { useAuth } from '../context/useAuth';
@@ -17,10 +18,13 @@ const initialForm = {
   mot_de_passe: '',
 };
 
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
 export default function Auth() {
   const [mode, setMode] = useState('signup');
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, signUp, refreshProfile } = useAuth();
@@ -32,19 +36,39 @@ export default function Auth() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  function switchMode(nextMode) {
+    setMode(nextMode);
+    setTurnstileToken('');
+  }
+
   async function submit(e) {
     e.preventDefault();
+
+    if (!turnstileSiteKey) {
+      fireToast('La verification captcha est mal configuree.');
+      return;
+    }
+
+    if (!turnstileToken) {
+      fireToast('Veuillez valider le captcha.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       if (mode === 'signup') {
-        await signUp(form);
+        await signUp({
+          ...form,
+          turnstile_token: turnstileToken,
+        });
         await refreshProfile();
         fireToast('Bienvenue chez The Tip Top !');
       } else {
         await signIn({
           email: form.email,
           mot_de_passe: form.mot_de_passe,
+          turnstile_token: turnstileToken,
         });
         await refreshProfile();
         fireToast('Connexion reussie, bon retour !');
@@ -52,6 +76,7 @@ export default function Auth() {
 
       navigate(redirectTo, { replace: true });
     } catch (error) {
+      setTurnstileToken('');
       fireToast(error.message);
     } finally {
       setSubmitting(false);
@@ -106,7 +131,7 @@ export default function Auth() {
         <div style={{ display: 'flex', background: 'var(--paper2)', borderRadius: 12, padding: 4, marginBottom: 22 }}>
           <button
             type="button"
-            onClick={() => setMode('signup')}
+            onClick={() => switchMode('signup')}
             style={{
               flex: 1,
               textAlign: 'center',
@@ -125,7 +150,7 @@ export default function Auth() {
           </button>
           <button
             type="button"
-            onClick={() => setMode('login')}
+            onClick={() => switchMode('login')}
             style={{
               flex: 1,
               textAlign: 'center',
@@ -214,6 +239,22 @@ export default function Auth() {
                 (RGPD).
               </span>
             </label>
+          )}
+          {turnstileSiteKey && (
+            <div style={{ display: 'flex', justifyContent: 'center', minHeight: 65 }}>
+              <Turnstile
+                key={mode}
+                siteKey={turnstileSiteKey}
+                options={{
+                  theme: 'light',
+                  size: 'normal',
+                  language: 'fr',
+                }}
+                onSuccess={setTurnstileToken}
+                onExpire={() => setTurnstileToken('')}
+                onError={() => setTurnstileToken('')}
+              />
+            </div>
           )}
           <Button type="submit" variant="solid" style={{ marginTop: 6 }} block disabled={submitting}>
             {submitting ? 'Veuillez patienter...' : mode === 'signup' ? 'Creer mon compte' : 'Me connecter'}
