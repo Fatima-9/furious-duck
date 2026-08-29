@@ -371,6 +371,7 @@ module.exports = {
   verifyTicket,
   participateWithTicket,
   getUserGainHistory,
+  toPublicTicket,
   getParticipationState,
   generateTicketCode,
   buildTicketCodes,

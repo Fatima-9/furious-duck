@@ -68,6 +68,55 @@ describe("adminEmployeeService", () => {
     });
   });
 
+  test("listEmployees normalizes filters and empty count", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id_role: 3 }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id_user: 6,
+            nom: "Sans",
+            prenom: "Boutique",
+            email: "sans@example.com",
+            statut: "actif",
+            boutique_id: null,
+            boutique_nom: null,
+            role_libelle: null,
+          },
+        ],
+      });
+
+    const result = await adminEmployeeService.listEmployees({
+      page: "bad",
+      limit: "999",
+      filters: {
+        nom: "Sans",
+        prenom: "Boutique",
+        statut: "actif",
+        boutique: "Paris",
+      },
+    });
+
+    expect(result.pagination).toMatchObject({
+      page: 1,
+      limit: 50,
+      total: 0,
+      total_pages: 1,
+    });
+    expect(result.employees[0].boutique).toBeNull();
+    expect(result.employees[0].role).toBe("employe_boutique");
+  });
+
+  test("listEmployees rejects when the employee role is missing", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(adminEmployeeService.listEmployees()).rejects.toMatchObject({
+      statusCode: 500,
+      message: "employee role is not configured",
+    });
+  });
+
   test("listActiveBoutiques returns active boutiques ordered for a select", async () => {
     pool.query.mockResolvedValueOnce({
       rows: [
@@ -109,6 +158,74 @@ describe("adminEmployeeService", () => {
       })
     );
     expect(result.mot_de_passe).toBeUndefined();
+  });
+
+  test("createEmployee rejects an already used email", async () => {
+    Utilisateur.findByEmail.mockResolvedValueOnce({ id_user: 99 });
+
+    await expect(
+      adminEmployeeService.createEmployee({
+        nom: "Boutique",
+        prenom: "Employe",
+        email: "employe@example.com",
+        mot_de_passe: "Password!1",
+        boutique_id: 1,
+      })
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      message: "email is already used",
+    });
+  });
+
+  test("updateEmployee updates email and password", async () => {
+    Utilisateur.findById.mockResolvedValueOnce({ id_user: 5, role_id: 3 });
+    Role.findById.mockResolvedValueOnce({ id_role: 3, libelle: "employe_boutique" });
+    Utilisateur.findByEmail.mockResolvedValueOnce({ id_user: 5 });
+    Utilisateur.update.mockResolvedValueOnce({
+      id_user: 5,
+      email: "same@example.com",
+      mot_de_passe: "hashed-password",
+    });
+
+    const result = await adminEmployeeService.updateEmployee(5, {
+      email: "same@example.com",
+      mot_de_passe: "Password!2",
+    });
+
+    expect(Utilisateur.update).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({
+        email: "same@example.com",
+        mot_de_passe: "hashed-password",
+      })
+    );
+    expect(result.mot_de_passe).toBeUndefined();
+  });
+
+  test("updateEmployee rejects duplicate emails and non-employee accounts", async () => {
+    Utilisateur.findById.mockResolvedValueOnce({ id_user: 5, role_id: 3 });
+    Role.findById.mockResolvedValueOnce({ id_role: 3, libelle: "employe_boutique" });
+    Utilisateur.findByEmail.mockResolvedValueOnce({ id_user: 6 });
+
+    await expect(
+      adminEmployeeService.updateEmployee(5, { email: "used@example.com" })
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      message: "email is already used",
+    });
+
+    Utilisateur.findById.mockResolvedValueOnce(null);
+    await expect(adminEmployeeService.updateEmployee(404, {})).rejects.toMatchObject({
+      statusCode: 404,
+      message: "employee not found",
+    });
+
+    Utilisateur.findById.mockResolvedValueOnce({ id_user: 5, role_id: 1 });
+    Role.findById.mockResolvedValueOnce({ id_role: 1, libelle: "client" });
+    await expect(adminEmployeeService.updateEmployee(5, {})).rejects.toMatchObject({
+      statusCode: 400,
+      message: "user is not an employee account",
+    });
   });
 
   test("deleteEmployee marks an employee account as deleted", async () => {

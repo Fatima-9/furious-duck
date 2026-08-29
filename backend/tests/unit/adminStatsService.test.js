@@ -99,4 +99,48 @@ describe("adminStatsService", () => {
       { type_inscription: "email", total: 3 },
     ]);
   });
+
+  test("getOverview combines ticket, gain and user statistics", async () => {
+    pool.query
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            total: "10",
+            utilises: "6",
+            restants: "4",
+            remis: "2",
+            a_remettre: "4",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id_gain: 1,
+            libelle: "Infuseur a the",
+            pourcentage_distribution: "60.00",
+            quantite_total: "6",
+            quantite_restante: "1",
+            tickets_gagnes: "5",
+            lots_remis: "2",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ total: "3", actifs: "2", participants: "1" }],
+      })
+      .mockResolvedValueOnce({ rows: [{ sexe: "F", total: "2" }] })
+      .mockResolvedValueOnce({ rows: [{ tranche: "18_24", total: "2" }] })
+      .mockResolvedValueOnce({
+        rows: [{ type_inscription: "google", total: "2" }],
+      });
+
+    const overview = await adminStatsService.getOverview();
+
+    expect(overview.tickets.total).toBe(10);
+    expect(overview.gains[0].tickets_gagnes).toBe(5);
+    expect(overview.utilisateurs.par_type_inscription).toEqual([
+      { type_inscription: "google", total: 2 },
+    ]);
+  });
 });
