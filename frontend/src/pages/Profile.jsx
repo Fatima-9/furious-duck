@@ -21,6 +21,7 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import StatCard from '../components/ui/StatCard';
 import { FieldRow } from '../components/ui/Field';
+import { PRIZES } from '../data/prizes';
 import { canParticipate, getRoleDisplayName, isAdmin } from '../utils/roles';
 
 const staffFiltersInitial = {
@@ -51,6 +52,21 @@ const employeeFormInitial = {
   boutique_id: '',
   statut: 'actif',
 };
+
+const participationStatusOptions = [
+  { value: 'actif', label: 'Actif' },
+  { value: 'utilise', label: 'Utilise' },
+];
+
+const employeeStatusOptions = [
+  { value: 'actif', label: 'Actif' },
+  { value: 'inactif', label: 'Inactif' },
+];
+
+const prizeFilterOptions = PRIZES.map((prize) => ({
+  value: prize.backendLabels[0],
+  label: prize.name,
+}));
 
 const adultBirthDateLimit = new Date();
 adultBirthDateLimit.setFullYear(adultBirthDateLimit.getFullYear() - 18);
@@ -498,9 +514,23 @@ export default function Profile() {
                   <input className="ttt-table-filter" aria-label="Filtrer par email" placeholder="Email" value={staffFiltersDraft.email} onChange={(event) => updateStaffFilter('email', event.target.value)} />
                   <input className="ttt-table-filter" aria-label="Filtrer par nom" placeholder="Nom" value={staffFiltersDraft.nom} onChange={(event) => updateStaffFilter('nom', event.target.value)} />
                   <input className="ttt-table-filter" aria-label="Filtrer par prenom" placeholder="Prenom" value={staffFiltersDraft.prenom} onChange={(event) => updateStaffFilter('prenom', event.target.value)} />
-                  <input className="ttt-table-filter" aria-label="Filtrer par lot" placeholder="Lot" value={staffFiltersDraft.gain} onChange={(event) => updateStaffFilter('gain', event.target.value)} />
+                  <select className="ttt-table-filter" aria-label="Filtrer par lot" value={staffFiltersDraft.gain} onChange={(event) => updateStaffFilter('gain', event.target.value)}>
+                    <option value="">Lot</option>
+                    {prizeFilterOptions.map((prize) => (
+                      <option key={prize.value} value={prize.value}>
+                        {prize.label}
+                      </option>
+                    ))}
+                  </select>
                   <input className="ttt-table-filter" aria-label="Filtrer par date" type="date" value={staffFiltersDraft.date_utilisation} onChange={(event) => updateStaffFilter('date_utilisation', event.target.value)} />
-                  <input className="ttt-table-filter" aria-label="Filtrer par statut" placeholder="Statut" value={staffFiltersDraft.statut} onChange={(event) => updateStaffFilter('statut', event.target.value)} />
+                  <select className="ttt-table-filter" aria-label="Filtrer par statut" value={staffFiltersDraft.statut} onChange={(event) => updateStaffFilter('statut', event.target.value)}>
+                    <option value="">Statut</option>
+                    {participationStatusOptions.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
                   <select className="ttt-table-filter" aria-label="Filtrer par remise" value={staffFiltersDraft.remis} onChange={(event) => updateStaffFilter('remis', event.target.value)}>
                     <option value="">Remise</option>
                     <option value="false">A retirer</option>
@@ -607,9 +637,11 @@ export default function Profile() {
                   ))}
                 </select>
                 <select className="ttt-table-filter" value={employeeForm.statut} onChange={(event) => updateEmployeeForm('statut', event.target.value)}>
-                  <option value="actif">Actif</option>
-                  <option value="inactif">Inactif</option>
-                  <option value="supprime">Supprime</option>
+                  {employeeStatusOptions.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
                 </select>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {employeeForm.id_user && (
@@ -630,12 +662,21 @@ export default function Profile() {
                       <input className="ttt-table-filter" aria-label="Filtrer employe par email" placeholder="Email" value={employeeFiltersDraft.email} onChange={(event) => updateEmployeeFilter('email', event.target.value)} />
                       <input className="ttt-table-filter" aria-label="Filtrer employe par nom" placeholder="Nom" value={employeeFiltersDraft.nom} onChange={(event) => updateEmployeeFilter('nom', event.target.value)} />
                       <input className="ttt-table-filter" aria-label="Filtrer employe par prenom" placeholder="Prenom" value={employeeFiltersDraft.prenom} onChange={(event) => updateEmployeeFilter('prenom', event.target.value)} />
-                      <input className="ttt-table-filter" aria-label="Filtrer employe par boutique" placeholder="Boutique" value={employeeFiltersDraft.boutique} onChange={(event) => updateEmployeeFilter('boutique', event.target.value)} />
+                      <select className="ttt-table-filter" aria-label="Filtrer employe par boutique" value={employeeFiltersDraft.boutique} onChange={(event) => updateEmployeeFilter('boutique', event.target.value)}>
+                        <option value="">Boutique</option>
+                        {boutiques.map((boutique) => (
+                          <option key={boutique.id_boutique} value={boutique.nom}>
+                            {boutique.nom}
+                          </option>
+                        ))}
+                      </select>
                       <select className="ttt-table-filter" aria-label="Filtrer employe par statut" value={employeeFiltersDraft.statut} onChange={(event) => updateEmployeeFilter('statut', event.target.value)}>
                         <option value="">Statut</option>
-                        <option value="actif">Actif</option>
-                        <option value="inactif">Inactif</option>
-                        <option value="supprime">Supprime</option>
+                        {employeeStatusOptions.map((status) => (
+                          <option key={status.value} value={status.value}>
+                            {status.label}
+                          </option>
+                        ))}
                       </select>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <Button type="button" variant="ghost" size="sm" onClick={resetEmployeeFilters}>
@@ -713,7 +754,9 @@ export default function Profile() {
                 }}
               />
               <select className="ttt-table-filter" value={profileForm.sexe} onChange={(event) => updateProfileForm('sexe', event.target.value)}>
-                <option value="">Non precise</option>
+                <option value="" disabled>
+                  Choisir...
+                </option>
                 <option value="F">Femme</option>
                 <option value="M">Homme</option>
                 <option value="N">Non precise</option>

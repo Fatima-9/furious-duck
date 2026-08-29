@@ -37,14 +37,13 @@ async function getEmployeeRoleId() {
 }
 
 function buildEmployeeFilters(filters = {}, employeeRoleId) {
-  const clauses = ["u.role_id = $1"];
+  const clauses = ["u.role_id = $1", "u.statut <> 'supprime'"];
   const values = [employeeRoleId];
 
   const textFilters = [
     ["email", "u.email"],
     ["nom", "u.nom"],
     ["prenom", "u.prenom"],
-    ["statut", "u.statut"],
     ["boutique", "b.nom"],
   ];
 
@@ -55,6 +54,11 @@ function buildEmployeeFilters(filters = {}, employeeRoleId) {
       clauses.push(`${column} ILIKE $${values.length}`);
     }
   });
+
+  if (typeof filters.statut === "string" && ["actif", "inactif"].includes(filters.statut.trim())) {
+    values.push(filters.statut.trim());
+    clauses.push(`u.statut = $${values.length}`);
+  }
 
   return {
     where: clauses.join(" AND "),

@@ -66,6 +66,11 @@ describe("adminEmployeeService", () => {
       email: "employe@example.com",
       role: "employe_boutique",
     });
+    expect(pool.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("u.statut <> 'supprime'"),
+      expect.any(Array)
+    );
   });
 
   test("listEmployees normalizes filters and empty count", async () => {
@@ -106,6 +111,11 @@ describe("adminEmployeeService", () => {
     });
     expect(result.employees[0].boutique).toBeNull();
     expect(result.employees[0].role).toBe("employe_boutique");
+    expect(pool.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("u.statut = $5"),
+      [3, "%Sans%", "%Boutique%", "%Paris%", "actif"]
+    );
   });
 
   test("listEmployees rejects when the employee role is missing", async () => {
