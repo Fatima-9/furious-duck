@@ -137,13 +137,18 @@ EOF
         ]) {
           script {
             def scannerHome = tool 'SonarScanner'
-            sh """
-              ${scannerHome}/bin/sonar-scanner \
-                -Dsonar.host.url=${SONAR_HOST_URL} \
-                -Dsonar.token=${SONAR_TOKEN} \
-                -Dsonar.qualitygate.wait=true \
-                -Dsonar.qualitygate.timeout=300
-            """
+            def branch = env.BRANCH_NAME ?: env.GIT_BRANCH?.replace('origin/', '') ?: 'local'
+
+            withEnv(["SONAR_SCANNER_HOME=${scannerHome}", "SONAR_BRANCH_NAME=${branch}"]) {
+              sh '''
+                "$SONAR_SCANNER_HOME/bin/sonar-scanner" \
+                  -Dsonar.host.url="$SONAR_HOST_URL" \
+                  -Dsonar.token="$SONAR_TOKEN" \
+                  -Dsonar.branch.name="$SONAR_BRANCH_NAME" \
+                  -Dsonar.qualitygate.wait=true \
+                  -Dsonar.qualitygate.timeout=300
+              '''
+            }
           }
         }
       }
