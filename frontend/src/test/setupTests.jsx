@@ -1,15 +1,27 @@
 import '@testing-library/jest-dom/vitest';
 import { beforeEach, vi } from 'vitest';
 
+let turnstileRenderCount = 0;
+
 vi.mock('@marsidev/react-turnstile', () => ({
-  Turnstile: ({ onSuccess }) => (
-    <button type="button" data-testid="turnstile" onClick={() => onSuccess?.('test-turnstile-token')}>
+  Turnstile: ({ onSuccess }) => {
+    turnstileRenderCount += 1;
+
+    return (
+    <button
+      type="button"
+      data-testid="turnstile"
+      data-render-count={turnstileRenderCount}
+      onClick={() => onSuccess?.('test-turnstile-token')}
+    >
       Valider le captcha
     </button>
-  ),
+    );
+  },
 }));
 
 beforeEach(() => {
+  turnstileRenderCount = 0;
   localStorage.clear();
   vi.restoreAllMocks();
   window.gtag = vi.fn();

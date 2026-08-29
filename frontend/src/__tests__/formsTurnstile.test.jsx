@@ -132,6 +132,34 @@ describe('Turnstile protected forms', () => {
     });
   });
 
+  it('resets the captcha widget after failed login credentials', async () => {
+    const user = userEvent.setup();
+    signIn.mockRejectedValue(new Error('invalid credentials'));
+    const { default: Auth } = await loadAuthPage();
+    renderForm(<Auth />);
+
+    await user.click(screen.getByRole('button', { name: 'Connexion' }));
+    await user.type(screen.getByLabelText('Adresse e-mail'), 'employee@thetiptop.fr');
+    await user.type(screen.getByLabelText('Mot de passe'), 'WrongPassword1!');
+
+    const firstWidget = screen.getByTestId('turnstile');
+    const firstRenderCount = firstWidget.dataset.renderCount;
+
+    await user.click(firstWidget);
+    await user.click(screen.getByRole('button', { name: 'Me connecter' }));
+
+    await waitFor(() => {
+      expect(fireToast).toHaveBeenCalledWith('invalid credentials');
+    });
+
+    const resetWidget = screen.getByTestId('turnstile');
+    expect(resetWidget.dataset.renderCount).not.toBe(firstRenderCount);
+
+    await user.click(screen.getByRole('button', { name: 'Me connecter' }));
+
+    expect(fireToast).toHaveBeenLastCalledWith('Veuillez valider le captcha.');
+  });
+
   it('sends contact messages with the captcha token and resets the form', async () => {
     const user = userEvent.setup();
     sendContactMessage.mockResolvedValue({ message: 'ok' });
