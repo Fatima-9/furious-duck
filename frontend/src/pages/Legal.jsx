@@ -97,9 +97,9 @@ export default function Legal() {
 
             <h3>Conception et hébergement</h3>
             <p>
-              Le site est conçu dans un cadre pédagogique par l’agence étudiante Furious Ducks pour Thé Tip Top. Les
-              coordonnées définitives de l’hébergeur (dénomination, adresse et téléphone) seront publiées ici avant
-              toute mise en ligne publique.
+              Le site est conçu dans un cadre pédagogique par l’agence étudiante Furious Ducks pour Thé Tip Top. Il est
+              déployé sur une infrastructure cloud Google Cloud Platform, avec Traefik comme reverse proxy sécurisé et
+              des outils techniques de supervision et de déploiement comme Jenkins, Prometheus et Grafana.
             </p>
 
             <h3>Propriété intellectuelle</h3>
@@ -132,9 +132,26 @@ export default function Legal() {
             <h3>Compte utilisateur</h3>
             <p>
               L’utilisateur peut s’inscrire par formulaire ou au moyen d’un compte Google lorsque cette option est
-              disponible. Il s’engage à transmettre des informations exactes et à protéger ses identifiants. Toute
-              fraude, usurpation d’identité, tentative de contournement ou perturbation du service peut entraîner la
-              suspension ou la suppression du compte, sans préjudice des recours applicables.
+              disponible. La participation est réservée aux personnes âgées d’au moins 18 ans ; la date de naissance
+              renseignée lors de l’inscription permet de vérifier cette condition. L’utilisateur s’engage à transmettre
+              des informations exactes et à protéger ses identifiants. Toute fraude, usurpation d’identité, tentative de
+              contournement ou perturbation du service peut entraîner la suspension ou la suppression du compte, sans
+              préjudice des recours applicables.
+            </p>
+
+            <h3>Gestion du profil et suppression</h3>
+            <p>
+              L’utilisateur connecté peut consulter ses participations, modifier les informations de son profil et
+              demander la suppression de son compte lorsque le compte n’est pas un compte administrateur. La suppression
+              entraîne l’effacement du compte utilisateur selon les règles de conservation applicables aux obligations
+              légales, au suivi du jeu-concours et à la prévention de la fraude.
+            </p>
+
+            <h3>Sécurité des formulaires</h3>
+            <p>
+              Les formulaires sensibles, notamment la connexion, la création de compte et le contact, peuvent être
+              protégés par Cloudflare Turnstile afin de limiter les soumissions automatisées. Cette vérification
+              contribue à protéger le service, les participants et les données associées au jeu-concours.
             </p>
 
             <h3>Évolution du service et droit applicable</h3>
@@ -153,7 +170,9 @@ export default function Legal() {
               Thé Tip Top est responsable des traitements liés au site. Les données de compte et de participation
               (nom, prénom, adresse e-mail, date de naissance lorsque renseignée, identifiants techniques, tickets,
               gains et historique) servent à créer et sécuriser le compte, administrer le jeu, attribuer et remettre
-              les gains, répondre aux demandes et prévenir la fraude. Les communications commerciales ne sont
+              les gains, répondre aux demandes et prévenir la fraude. Les données transmises via le formulaire de
+              contact servent à traiter la demande. L’adresse e-mail saisie dans le bloc newsletter sert à enregistrer
+              une demande d’information ou de communication liée à Thé Tip Top. Les communications commerciales ne sont
               envoyées qu’avec un consentement préalable.
             </p>
 
@@ -161,9 +180,20 @@ export default function Legal() {
             <p>
               Les traitements reposent, selon leur finalité, sur l’exécution du service demandé, le respect
               d’obligations légales, l’intérêt légitime de sécurisation ou le consentement. Les données sont réservées
-              aux personnes habilitées de Thé Tip Top et à ses prestataires techniques strictement nécessaires. Elles
-              sont conservées pendant la durée utile au jeu et aux obligations applicables ; les données de
-              prospection sont conservées au maximum trois ans après le dernier contact.
+              aux personnes habilitées de Thé Tip Top et à ses prestataires techniques strictement nécessaires,
+              notamment l’hébergement, l’envoi d’e-mails, l’authentification, la protection anti-bot, la supervision
+              technique, les journaux serveur et la mesure d’audience lorsque celle-ci est acceptée. Elles sont
+              conservées pendant la durée utile au jeu et aux obligations applicables ; les données de prospection sont
+              conservées au maximum trois ans après le dernier contact.
+            </p>
+
+            <h3>Services tiers utilisés</h3>
+            <p>
+              Le site peut s’appuyer sur des services tiers pour assurer son fonctionnement : Google pour la connexion
+              optionnelle et Google Analytics après consentement, Facebook lorsque la connexion sociale est activée,
+              Cloudflare Turnstile pour la vérification anti-robot, ainsi qu’un prestataire SMTP pour l’envoi des
+              e-mails de réinitialisation de mot de passe et de notification. Seules les données nécessaires à chaque
+              usage sont transmises.
             </p>
 
             <h3>Vos droits</h3>
@@ -185,6 +215,14 @@ export default function Legal() {
               sont actifs sans consentement. Les catégories facultatives « mesure d’audience » et « marketing » sont
               désactivées par défaut. Vous pouvez les accepter, les refuser ou les sélectionner séparément ; refuser
               n’empêche pas d’accéder au site.
+            </p>
+
+            <h3>Cloudflare Turnstile</h3>
+            <p>
+              Cloudflare Turnstile est utilisé pour vérifier que certaines actions proviennent d’un utilisateur réel et
+              pour limiter les abus automatisés sur les formulaires. Cette vérification peut traiter des informations
+              techniques nécessaires à la sécurité, comme l’adresse IP, le navigateur, l’environnement de l’appareil et
+              le résultat du défi de validation. Elle est utilisée dans l’intérêt légitime de protection du service.
             </p>
 
             <h3>Google Analytics</h3>

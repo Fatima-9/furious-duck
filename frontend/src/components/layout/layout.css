@@ -114,7 +114,7 @@
   max-width: 1180px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  grid-template-columns: 1.6fr 1fr 1fr 1.15fr;
   gap: 36px;
 }
 .ttt-footer-brand {
@@ -166,6 +166,45 @@
 }
 .ttt-footer-linkbtn:hover {
   color: #fff;
+}
+.ttt-footer-stack {
+  display: grid;
+  gap: 26px;
+}
+.ttt-social-icons {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.ttt-social-icons a {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.ttt-social-icons a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.34);
+  transform: translateY(-1px);
+}
+.ttt-social-icons svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.ttt-social-icons a:nth-child(2) svg,
+.ttt-social-icons a:nth-child(3) svg {
+  fill: currentColor;
+  stroke: none;
 }
 .ttt-footer-bottom {
   max-width: 1180px;

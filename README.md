@@ -1,62 +1,48 @@
-# Furious Duck
+# Furious Duck - The Tip Top
 
-Application web composee de deux services :
+Application web du jeu-concours The Tip Top.
 
-- **Backend** : API Node.js avec Express
-- **Frontend** : application React avec Vite
+Le projet contient :
 
-Le projet peut etre lance avec Docker Compose ou directement avec npm en mode developpement.
-
-## Sommaire
-
-- [Prerequis](#prerequis)
-- [Structure du projet](#structure-du-projet)
-- [Configuration](#configuration)
-- [Base de donnees](#base-de-donnees)
-- [Lancement avec Docker](#lancement-avec-docker)
-- [Lancement sans Docker](#lancement-sans-docker)
-- [URLs de test](#urls-de-test)
-- [API Authentification](#api-authentification)
-- [API Profil](#api-profil)
-- [API Tickets et participation](#api-tickets-et-participation)
-- [Commandes utiles](#commandes-utiles)
-- [Depannage](#depannage)
+- un frontend React / Vite ;
+- un backend Node.js / Express ;
+- une base PostgreSQL externe ;
+- une configuration Docker ;
+- Traefik pour le HTTPS et le reverse proxy ;
+- Jenkins pour la CI/CD ;
+- Prometheus et Grafana pour la supervision.
 
 ## Prerequis
 
-Avant de lancer le projet, installer :
-
-- Node.js
+- Node.js 22
 - npm
-- Docker Desktop
+- Docker
+- Docker Compose
+- Acces a une base PostgreSQL
 
-Verifier que Docker Desktop est demarre avant d'utiliser les commandes Docker Compose.
-
-## Structure du projet
+## Structure principale
 
 ```text
 furious-duck/
 |-- backend/
-|   |-- server.js
-|   |-- package.json
-|   |-- Dockerfile
-|   `-- .env
 |-- frontend/
-|   |-- src/
-|   |-- package.json
-|   `-- Dockerfile
+|-- monitoring/
 |-- docker-compose.yml
 |-- docker-compose.dev.yml
-|-- docker-compose.preprod.yml
-|-- docker-compose.prod.yml
+|-- docker-compose.dev.live.yml
+|-- docker-compose.ci.yml
+|-- docker-compose.jenkins.yml
+|-- docker-compose.monitoring.yml
+|-- docker-compose.traefik.yml
+|-- Jenkinsfile
 `-- README.md
 ```
 
-## Configuration
+## Variables d'environnement
 
-Le backend utilise des variables d'environnement pour se connecter a PostgreSQL et pour signer les jetons d'authentification.
+### Backend
 
-Creer un fichier `backend/.env` avec le contenu suivant :
+Creer `backend/.env` :
 
 ```env
 PORT=5000
@@ -68,587 +54,387 @@ DEFAULT_USER_ROLE_ID=1
 DEFAULT_BOUTIQUE_ID=1
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 FACEBOOK_APP_ID=your-facebook-app-id
+APP_URL=http://localhost:5173
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+SMTP_FROM=The Tip Top <no-reply@thetiptop.fr>
+TURNSTILE_SECRET_KEY=cloudflare-turnstile-secret-key
 ```
 
-Detail des variables :
+Variables importantes :
 
-- `JWT_SECRET` : cle utilisee pour signer les jetons. Sans elle, l'API renvoie une erreur 500 sur toutes les routes d'authentification.
-- `JWT_EXPIRES_IN` : duree de validite d'un jeton de connexion. Valeur par defaut `1d`.
-- `RESET_TOKEN_EXPIRES_IN_MINUTES` : duree de validite d'un lien de reinitialisation de mot de passe. Valeur par defaut `60`.
-- `DEFAULT_USER_ROLE_ID` : role attribue aux nouveaux comptes crees via Google/Facebook.
-- `DEFAULT_BOUTIQUE_ID` : boutique rattachee par defaut aux nouveaux comptes crees via Google/Facebook.
-- `GOOGLE_CLIENT_ID` : identifiant client Google utilise pour verifier que le token Google vient bien de votre application.
-- `FACEBOOK_APP_ID` : identifiant application Facebook, utile cote configuration OAuth.
+- `DATABASE_URL` : connexion PostgreSQL.
+- `JWT_SECRET` : cle de signature des tokens de connexion.
+- `APP_URL` : URL publique du frontend, utilisee dans les emails de reset password.
+- `SMTP_*` : configuration d'envoi des emails.
+- `TURNSTILE_SECRET_KEY` : cle secrete Cloudflare Turnstile verifiee par le backend.
 
-Le fichier `.env` ne doit pas etre versionne. Il contient des informations sensibles.
+### Frontend
 
-Le fichier `backend/.env.example` liste les variables attendues et peut servir de modele.
+Creer `frontend/.env` :
+
+```env
+VITE_API_URL=http://localhost:5000
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+VITE_FACEBOOK_APP_ID=your-facebook-app-id
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+VITE_TURNSTILE_SITE_KEY=cloudflare-turnstile-site-key
+```
+
+Variables importantes :
+
+- `VITE_API_URL` : URL de l'API. En deploiement derriere Traefik, elle peut rester vide pour utiliser `/api`.
+- `VITE_GA_MEASUREMENT_ID` : identifiant Google Analytics.
+- `VITE_TURNSTILE_SITE_KEY` : cle publique Cloudflare Turnstile affichee dans le navigateur.
 
 ## Base de donnees
 
-Le fichier `backend/database/schema.sql` contient toutes les tables du projet.
+Le schema est dans :
 
-Il doit etre rejoue apres avoir recupere la fonctionnalite de reinitialisation de mot de passe : celle-ci ajoute deux colonnes a la table `utilisateurs`.
+```text
+backend/database/schema.sql
+```
+
+Pour l'appliquer :
 
 ```bash
 psql "postgresql://USER:PASSWORD@HOST/DATABASE" -f backend/database/schema.sql
 ```
 
-Le script utilise `CREATE TABLE IF NOT EXISTS` et `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. Il peut donc etre rejoue sur une base existante sans supprimer de donnees.
+Le script utilise `CREATE TABLE IF NOT EXISTS` et `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, donc il peut etre rejoue sans supprimer les donnees.
 
-Si cette etape est oubliee, l'API repond avec une erreur du type :
+## Lancement local sans Docker
 
-```text
-column "reset_token_hash" does not exist
-```
-
-## Lancement avec Docker
-
-Depuis la racine du projet :
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-```
-
-Cette commande :
-
-- construit les images Docker du backend et du frontend ;
-- installe les dependances dans les conteneurs ;
-- lance le backend en mode developpement avec `nodemon` ;
-- lance le frontend Vite en mode developpement ;
-- expose le backend sur le port `5000` ;
-- expose le frontend sur le port `5173`.
-
-Pour arreter les conteneurs :
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
-```
-
-Pour arreter les conteneurs et supprimer les volumes Docker, notamment les volumes `node_modules` :
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
-```
-
-Cette commande est utile si Docker garde d'anciennes dependances.
-
-## Lancement sans Docker
-
-### Backend
-
-Depuis le dossier `backend` :
-
-```bash
-npm install
-npm run dev
-```
-
-Le backend demarre sur :
-
-```text
-http://localhost:5000
-```
-
-### Frontend
-
-Depuis le dossier `frontend` :
-
-```bash
-npm install
-npm run dev
-```
-
-Le frontend demarre sur :
-
-```text
-http://localhost:5173
-```
-
-## URLs de test
-
-### Backend
-
-Verifier que l'API repond :
-
-```text
-http://localhost:5000/api/health
-```
-
-Reponse attendue :
-
-```json
-{
-  "status": "ok"
-}
-```
-
-### Base de donnees
-
-Verifier la connexion PostgreSQL :
-
-```text
-http://localhost:5000/api/db/health
-```
-
-Reponse attendue si la base de donnees est accessible :
-
-```json
-{
-  "status": "ok",
-  "databaseTime": "2026-06-27T..."
-}
-```
-
-### Frontend
-
-Ouvrir l'application :
-
-```text
-http://localhost:5173
-```
-
-## API Authentification
-
-Base : `/api/auth`. Ces routes sont publiques, elles ne demandent pas de jeton.
-
-### Creer un compte
-
-```text
-POST /api/auth/register
-```
-
-```json
-{
-  "nom": "Dupont",
-  "prenom": "Marie",
-  "email": "marie@example.com",
-  "mot_de_passe": "motdepasse123",
-  "role_id": 1,
-  "boutique_id": 1
-}
-```
-
-Renvoie l'utilisateur cree et un jeton JWT. Le mot de passe doit contenir au moins 8 caracteres.
-
-### Se connecter
-
-```text
-POST /api/auth/login
-```
-
-```json
-{
-  "email": "marie@example.com",
-  "mot_de_passe": "motdepasse123"
-}
-```
-
-Renvoie l'utilisateur et un jeton JWT.
-
-### S'inscrire ou se connecter avec Google/Facebook
-
-```text
-POST /api/auth/oauth
-```
-
-```json
-{
-  "provider": "google",
-  "token": "token-google-ou-facebook"
-}
-```
-
-Le `provider` accepte `google` ou `facebook`.
-
-Le frontend doit d'abord recuperer un token chez Google ou Facebook, puis l'envoyer au backend. Le backend verifie ce token aupres du fournisseur avant de connecter l'utilisateur ou de creer son compte.
-
-Pour Google, le token attendu est un `id_token`. Pour Facebook, le token attendu est un `access_token`.
-
-Si l'utilisateur n'existe pas encore, l'API cree un compte avec `DEFAULT_USER_ROLE_ID` et `DEFAULT_BOUTIQUE_ID`. Ces valeurs doivent correspondre a des lignes existantes en base de donnees.
-
-### Demander une reinitialisation de mot de passe
-
-```text
-POST /api/auth/forgot-password
-```
-
-```json
-{
-  "email": "marie@example.com"
-}
-```
-
-La reponse est toujours la meme, que le compte existe ou non. C'est volontaire : cela empeche de decouvrir quelles adresses sont inscrites en les testant une par une.
-
-```json
-{
-  "status": "success",
-  "message": "if the account exists, a reset link has been sent"
-}
-```
-
-L'envoi d'email n'est pas encore branche. En dehors de la production, le jeton est affiche dans les logs du serveur backend :
-
-```text
-[reset] token for marie@example.com: 3f2a9c...
-```
-
-### Reinitialiser le mot de passe
-
-```text
-POST /api/auth/reset-password
-```
-
-```json
-{
-  "token": "3f2a9c...",
-  "mot_de_passe": "nouveaumotdepasse"
-}
-```
-
-Le jeton est valable pendant la duree definie par `RESET_TOKEN_EXPIRES_IN_MINUTES` et ne peut servir qu'une seule fois : il est efface des que le mot de passe change.
-
-Seule l'empreinte du jeton est stockee en base, jamais le jeton lui-meme.
-
-## API Profil
-
-Base : `/api/users`. Toutes ces routes exigent un jeton valide dans l'en-tete :
-
-```text
-Authorization: Bearer VOTRE_JETON
-```
-
-L'utilisateur modifie est toujours celui du jeton. Aucun identifiant n'est lu depuis le corps de la requete.
-
-### Consulter son profil
-
-```text
-GET /api/users/me
-```
-
-Renvoie l'utilisateur connecte, sans son mot de passe.
-
-### Modifier son profil
-
-```text
-PATCH /api/users/me
-```
-
-```json
-{
-  "nom": "Dupont",
-  "prenom": "Marie",
-  "email": "marie.dupont@example.com",
-  "date_de_naissance": "1999-05-12",
-  "sexe": "F"
-}
-```
-
-Tous les champs sont optionnels : seuls ceux envoyes sont modifies.
-
-Seuls ces cinq champs sont modifiables. `role_id`, `boutique_id` et `statut` sont volontairement exclus, pour qu'un utilisateur ne puisse pas changer lui-meme ses droits. Envoyer un champ non autorise renvoie une erreur 400 :
-
-```json
-{
-  "status": "error",
-  "message": "these fields cannot be updated: role_id"
-}
-```
-
-Si l'email est deja utilise par un autre compte, l'API renvoie une erreur 409.
-
-### Changer son mot de passe
-
-```text
-PATCH /api/users/me/password
-```
-
-```json
-{
-  "mot_de_passe_actuel": "motdepasse123",
-  "mot_de_passe": "nouveaumotdepasse"
-}
-```
-
-Le mot de passe actuel est exige en plus du jeton. Un jeton vole ne suffit donc pas pour prendre le controle d'un compte.
-
-## API Tickets et participation
-
-### Generer les tickets du jeu-concours
-
-La commande suivante cree une campagne, les 5 gains et les tickets associes :
-
-```bash
-cd backend
-npm run tickets:generate
-```
-
-Par defaut, elle genere `500000` tickets avec la repartition demandee :
-
-- 60% infuseur a the
-- 20% boite de 100g de the detox ou infusion
-- 10% boite de 100g de the signature
-- 6% coffret decouverte 39 euros
-- 4% coffret decouverte 69 euros
-
-Pour tester avec un petit volume :
-
-```bash
-npm run tickets:generate -- --total=100
-```
-
-Options disponibles :
-
-```text
---total=500000
---name="The Tip Top - Jeu concours"
---start=2026-08-01
---end=2026-08-30
---claim-end=2026-09-29
-```
-
-### Verifier un ticket
-
-```text
-GET /api/tickets/:code/verify
-```
-
-Cette route ne consomme pas le ticket. Elle indique seulement s'il existe et s'il peut etre utilise.
-
-### Participer avec un ticket
-
-```text
-POST /api/tickets/:code/participate
-```
-
-Cette route exige un jeton :
-
-```text
-Authorization: Bearer VOTRE_JETON
-```
-
-Elle associe le ticket a l'utilisateur connecte, marque le ticket comme utilise, empeche sa reutilisation et retourne le gain obtenu.
-
-### Historique de mes gains
-
-```text
-GET /api/tickets/me/history
-```
-
-Cette route exige un jeton et retourne la liste des tickets deja utilises par l'utilisateur connecte avec leurs gains.
-
-## Commandes utiles
-
-### Docker
-
-Lancer le projet en developpement :
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-```
-
-Arreter le projet :
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
-```
-
-Arreter le projet et supprimer les volumes :
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
-```
-
-Afficher la configuration Docker Compose finale :
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml config
-```
-
-### Backend
+Backend :
 
 ```bash
 cd backend
 npm install
 npm run dev
-npm start
 ```
 
-### Frontend
+Frontend :
 
 ```bash
 cd frontend
 npm install
 npm run dev
-npm run build
-npm run lint
 ```
 
-## CI/CD Jenkins
-
-Le depot contient un `Jenkinsfile` a la racine pour lancer une premiere pipeline CI compatible avec l'organisation actuelle du projet.
-
-Jenkins est lance avec Docker via une image personnalisee qui contient :
-
-- Node.js et npm ;
-- Git ;
-- Docker CLI ;
-- Docker Compose.
-
-### Lancer Jenkins avec Docker
-
-Depuis la racine du projet :
-
-```bash
-docker compose -f docker-compose.jenkins.yml up -d --build
-```
-
-Ouvrir ensuite :
+URLs locales :
 
 ```text
-http://localhost:8080
+http://localhost:5173
+http://localhost:5000/api/health
+http://localhost:5000/api/db/health
 ```
 
-Recuperer le mot de passe initial :
+## Lancement Docker local
 
 ```bash
-docker compose -f docker-compose.jenkins.yml exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-Installer les plugins suggeres, puis creer le compte administrateur Jenkins.
-
-Si un ancien conteneur Jenkins existe deja avec le nom `jenkins`, l'arreter avant d'utiliser cette configuration :
+Arret :
 
 ```bash
-docker stop jenkins
-docker rm jenkins
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 ```
 
-### Verifier Jenkins et Docker
-
-Verifier que Jenkins tourne :
+Arret avec suppression des volumes :
 
 ```bash
-docker compose -f docker-compose.jenkins.yml ps
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 ```
 
-Verifier que Jenkins a acces aux outils necessaires :
+## Deploiement live DEV / PREPROD
+
+Le deploiement public utilise :
+
+- Traefik en reverse proxy HTTPS ;
+- le backend sur le port interne `5000` ;
+- le frontend servi en statique par Nginx dans `frontend/Dockerfile.live` ;
+- Prometheus et Grafana via `docker-compose.monitoring.yml`.
+
+Commande type :
 
 ```bash
-docker compose -f docker-compose.jenkins.yml exec jenkins sh -lc "node --version && npm --version && docker --version && docker compose version"
+docker compose -p furious-duck-preprod-live \
+  -f docker-compose.yml \
+  -f docker-compose.dev.live.yml \
+  -f docker-compose.monitoring.yml \
+  up -d --build --scale backend=2 --scale frontend=2
 ```
 
-Si ces commandes affichent les versions, Jenkins peut lancer la pipeline du projet.
+## URLs utiles
 
-### Pipeline
+DEV :
 
-La pipeline execute :
+```text
+https://dev.dsp5-archi-o24a-g2.fr
+https://dev.dsp5-archi-o24a-g2.com
+https://dev.dsp5-archi-o24a-g2.fr/api/health
+https://dev.dsp5-archi-o24a-g2.fr/jenkins/
+https://dev.dsp5-archi-o24a-g2.fr/prometheus/
+https://dev.dsp5-archi-o24a-g2.fr/grafana/
+https://dev.dsp5-archi-o24a-g2.fr/traefik/dashboard/
+```
 
-- installation des dependances backend avec `npm ci` ;
-- verification syntaxique des fichiers JavaScript backend ;
-- installation des dependances frontend avec `npm ci` ;
-- lint frontend ;
-- build frontend ;
-- build des images Docker backend et frontend ;
-- health checks Docker Compose optionnels.
+PREPROD :
 
-Les health checks Docker Compose utilisent les fichiers existants :
+```text
+https://preprod.dsp5-archi-o24a-g2.fr
+https://preprod.dsp5-archi-o24a-g2.com
+https://preprod.dsp5-archi-o24a-g2.fr/api/health
+https://preprod.dsp5-archi-o24a-g2.fr/jenkins/
+https://preprod.dsp5-archi-o24a-g2.fr/prometheus/
+https://preprod.dsp5-archi-o24a-g2.fr/grafana/
+https://preprod.dsp5-archi-o24a-g2.fr/traefik/dashboard/
+```
+
+## Fonctionnalites principales
+
+### Authentification
+
+- Creation de compte.
+- Connexion email / mot de passe.
+- Connexion Google.
+- Connexion Facebook.
+- Mot de passe oublie.
+- Reset password par lien email.
+
+Le lien de reset password est construit avec `APP_URL`. Il pointe vers :
+
+```text
+/reset-password?token=...
+```
+
+### Captcha Turnstile
+
+Cloudflare Turnstile est present sur :
+
+- connexion ;
+- creation de compte ;
+- contact.
+
+Le frontend affiche le widget avec `VITE_TURNSTILE_SITE_KEY`.
+Le backend verifie le token avec `TURNSTILE_SECRET_KEY`.
+
+Turnstile ne demande pas toujours un defi visible. Il analyse plusieurs signaux automatiquement. Le domaine autorise dans Cloudflare sert seulement a proteger la cle du widget, ce n'est pas le seul controle anti-bot.
+
+### Age minimum
+
+La creation de compte impose un age minimum de 18 ans.
+
+Le controle est fait cote backend pour eviter le contournement depuis le navigateur.
+
+### Profil utilisateur
+
+L'utilisateur connecte peut :
+
+- consulter son profil ;
+- modifier ses informations ;
+- changer son mot de passe ;
+- supprimer son compte.
+
+La suppression du compte est definitive en base. Avant la suppression, les tickets lies a l'utilisateur sont detaches pour eviter les erreurs de contrainte SQL.
+
+Un compte admin ne peut pas etre supprime.
+
+### Jeu concours
+
+Le jeu concours :
+
+- commence le 1 septembre 2026 ;
+- dure 30 jours ;
+- laisse 30 jours supplementaires pour reclamer un lot ;
+- est 100 % gagnant ;
+- inclut un gros lot : 1 an de the, valeur 360 euros ;
+- concerne 10 boutiques.
+
+Les regles du jeu sont integrees dans la page Concept.
+
+### Newsletter
+
+La newsletter permet a un visiteur de laisser son email depuis le footer.
+
+Concretement :
+
+1. le frontend envoie l'email a l'API `/api/newsletter` ;
+2. le backend valide le format de l'email ;
+3. le backend envoie un email de notification a l'adresse configuree dans `SMTP_FROM` ;
+4. l'utilisateur voit un message de confirmation.
+
+Actuellement, la newsletter ne stocke pas encore les emails en base. Elle sert de formulaire d'inscription/notification par email. Si on veut faire une vraie liste marketing exploitable, il faudra ajouter une table `newsletter_subscribers` ou brancher un outil externe.
+
+### Contact
+
+Le formulaire contact :
+
+- valide les champs ;
+- exige Turnstile ;
+- envoie une notification email via SMTP.
+
+### SEO
+
+Ajouts :
+
+- `robots.txt` ;
+- `sitemap.xml` ;
+- page Plan du site ;
+- page 404 ;
+- page 500 ;
+- favicon ;
+- title et meta descriptions.
+
+## Tests et coverage
+
+Commandes :
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+npm --prefix backend test
 ```
 
-Comme PostgreSQL n'est pas lance par Docker Compose, Jenkins doit recevoir la connexion a la base via ses credentials.
+```bash
+COVERAGE_MIN=60 npm --prefix backend run test:coverage
+COVERAGE_MIN=80 npm --prefix backend run test:coverage
+COVERAGE_MIN=100 npm --prefix backend run test:coverage
+```
 
-Creer ces credentials Jenkins de type `Secret text` :
+Etat actuel :
+
+- 36 suites de tests passent ;
+- 200 tests passent ;
+- coverage lignes backend : 100 %.
+
+La pipeline controle actuellement la couverture des lignes.
+
+Seuils Jenkins :
+
+- DEV : validation a partir de 60 % ;
+- PREPROD : validation a partir de 80 % ;
+- PROD / main : validation a partir de 100 %.
+
+## Jenkins
+
+La pipeline est dans :
+
+```text
+Jenkinsfile
+```
+
+Ordre de la pipeline :
+
+1. checkout du code ;
+2. detection de l'environnement selon la branche ;
+3. installation des dependances backend et frontend ;
+4. controles qualite ;
+5. tests et coverage ;
+6. build frontend ;
+7. build des images Docker ;
+8. sauvegarde des images Docker avec `docker save` ;
+9. tests fonctionnels Docker Compose ;
+10. deploiement DEV ou PREPROD.
+
+Credentials Jenkins necessaires :
 
 ```text
 furious-duck-database-url
 furious-duck-jwt-secret
+furious-duck-turnstile-site-key
+furious-duck-turnstile-secret-key
 ```
 
-La variable `JWT_EXPIRES_IN` est definie a `1d` dans la pipeline.
+## Monitoring
 
-Par defaut, les health checks Docker Compose se lancent sur les branches `DEV` et `main`. Sur une branche de fonctionnalite, ils peuvent etre lances manuellement en cochant le parametre Jenkins :
+Prometheus :
 
 ```text
-RUN_DOCKER_COMPOSE_TESTS
+/prometheus/
 ```
 
-Convention de branches recommandee :
+Grafana :
 
 ```text
-feature/nom-fonctionnalite -> DEV -> main
+/grafana/
 ```
 
-Pour arreter Jenkins :
+Traefik dashboard :
 
-```bash
-docker compose -f docker-compose.jenkins.yml down
+```text
+/traefik/dashboard/
 ```
+
+## Fichiers importants
+
+- `docker-compose.yml` : base commune backend/frontend.
+- `docker-compose.dev.yml` : mode developpement local.
+- `docker-compose.dev.live.yml` : mode live DEV/PREPROD derriere Traefik.
+- `docker-compose.ci.yml` : configuration utilisee par Jenkins pour les tests fonctionnels.
+- `docker-compose.jenkins.yml` : lancement Jenkins.
+- `docker-compose.monitoring.yml` : Prometheus et Grafana.
+- `docker-compose.traefik.yml` : reverse proxy HTTPS Traefik.
+- `backend/Dockerfile.live` : image backend de deploiement.
+- `frontend/Dockerfile.live` : build frontend puis service statique via Nginx.
+- `frontend/nginx.conf` : configuration Nginx pour l'application React.
+- `monitoring/prometheus/prometheus.yml` : configuration des targets Prometheus.
+- `Jenkinsfile` : pipeline CI/CD.
 
 ## Depannage
 
-### `Cannot find module 'dotenv'`
+### Page introuvable apres reset password
 
-Ce probleme arrive si les dependances du backend ne sont pas installees ou si Docker reutilise un ancien volume `node_modules`.
+Verifier `APP_URL` dans `backend/.env`.
 
-Solution avec Docker :
+Les deux formats sont acceptes :
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```env
+APP_URL=http://localhost:5173
+APP_URL=http://localhost:5173/
 ```
 
-Solution sans Docker :
+Le backend normalise le lien pour eviter `//reset-password`.
 
-```bash
-cd backend
-npm install
-npm run dev
-```
+### Turnstile ne s'affiche pas en local
 
-### `Cannot GET /api/db/health`
-
-Cette erreur signifie que la route n'est pas exposee par le backend en cours d'execution.
-
-Verifier que :
-
-- le fichier `backend/server.js` contient bien la route `/api/db/health` ;
-- le serveur backend a ete redemarre ;
-- le navigateur pointe vers `http://localhost:5000/api/db/health`.
-
-### `DATABASE_URL is not configured`
-
-Cette erreur signifie que le backend ne trouve pas la variable `DATABASE_URL`.
-
-Verifier que :
-
-- le fichier `backend/.env` existe ;
-- `DATABASE_URL` est bien renseignee ;
-- Docker utilise bien `docker-compose.dev.yml`, qui charge `backend/.env`.
-
-### Probleme d'acces Docker sur Windows
-
-Si Docker affiche une erreur du type :
+Dans Cloudflare Turnstile, ajouter les domaines :
 
 ```text
-Access is denied
+localhost
+127.0.0.1
+dev.dsp5-archi-o24a-g2.fr
+dev.dsp5-archi-o24a-g2.com
+preprod.dsp5-archi-o24a-g2.fr
+preprod.dsp5-archi-o24a-g2.com
 ```
 
-Verifier que :
+### DATABASE_URL is not configured
 
-- Docker Desktop est demarre ;
-- le terminal a les droits necessaires ;
-- le fichier de configuration Docker dans le profil utilisateur est accessible.
+Verifier :
 
-## Production
+- `backend/.env` existe ;
+- `DATABASE_URL` est renseignee ;
+- Jenkins contient le credential `furious-duck-database-url`.
 
-Le fichier `docker-compose.prod.yml` est prevu pour une configuration de production, mais il doit etre complete selon l'environnement cible :
+### Prometheus affiche une page blanche
 
-- variables d'environnement ;
-- build frontend ;
-- reverse proxy eventuel ;
-- gestion des secrets ;
-- strategie de deploiement.
+Verifier que le conteneur Prometheus a bien acces a :
+
+```text
+monitoring/prometheus/prometheus.yml
+```
+
+Verifier aussi :
+
+```bash
+curl -s https://preprod.dsp5-archi-o24a-g2.fr/prometheus/-/ready
+```
+
+Reponse attendue :
+
+```text
+Prometheus Server is Ready.
+```

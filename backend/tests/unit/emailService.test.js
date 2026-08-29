@@ -17,6 +17,25 @@ describe("emailService content builders", () => {
     expect(link).toContain("token=a%20b%2Fc%2Bd");
   });
 
+  test("normalizes links when APP_URL ends with a slash", () => {
+    const originalAppUrl = process.env.APP_URL;
+
+    jest.resetModules();
+    process.env.APP_URL = "http://localhost:5173/";
+    const serviceWithTrailingSlash = require("../../services/emailService");
+
+    expect(serviceWithTrailingSlash.buildAppLink("/reset-password?token=abc")).toBe(
+      "http://localhost:5173/reset-password?token=abc"
+    );
+
+    if (originalAppUrl === undefined) {
+      delete process.env.APP_URL;
+    } else {
+      process.env.APP_URL = originalAppUrl;
+    }
+    jest.resetModules();
+  });
+
   test("the password-changed email confirms the change", () => {
     const { subject, text } = emailService.buildPasswordChangedContent();
 

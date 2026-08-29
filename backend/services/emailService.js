@@ -43,8 +43,12 @@ async function sendMail({ to, subject, text, html }) {
 
 // --- Generateurs de contenu (purs, donc facilement testables) ---
 
+function buildAppLink(path) {
+  return `${APP_URL.replace(/\/+$/, "")}${path}`;
+}
+
 function buildPasswordResetContent(resetToken) {
-  const link = `${APP_URL}/reset-password?token=${encodeURIComponent(resetToken)}`;
+  const link = buildAppLink(`/reset-password?token=${encodeURIComponent(resetToken)}`);
   const subject = "Reinitialisation de votre mot de passe";
   const text = `Bonjour,
 
@@ -101,4 +105,5 @@ module.exports = {
   sendPasswordChangedEmail,
   buildPasswordResetContent,
   buildPasswordChangedContent,
+  buildAppLink,
 };
