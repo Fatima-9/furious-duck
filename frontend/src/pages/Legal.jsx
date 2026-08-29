@@ -5,17 +5,8 @@ import { openCookiePreferences } from '../components/cookies/cookieConsent';
 const SECTIONS = [
   { id: 'lg-mentions', label: 'Mentions légales' },
   { id: 'lg-cgu', label: "Conditions d'utilisation" },
-  { id: 'lg-reglement', label: 'Règlement du jeu' },
   { id: 'lg-rgpd', label: 'Confidentialité' },
   { id: 'lg-cookies', label: 'Cookies & Analytics' },
-];
-
-const PRIZES = [
-  ['60 %', 'Un infuseur à thé'],
-  ['20 %', 'Une boîte de 100 g de thé détox ou d’infusion'],
-  ['10 %', 'Une boîte de 100 g de thé signature'],
-  ['6 %', 'Un coffret découverte d’une valeur de 39 €'],
-  ['4 %', 'Un coffret découverte d’une valeur de 69 €'],
 ];
 
 export default function Legal() {
@@ -23,9 +14,9 @@ export default function Legal() {
   const [activeSection, setActiveSection] = useState(hash.slice(1) || SECTIONS[0].id);
 
   useEffect(() => {
-    document.title = 'Règlement du jeu, mentions légales et confidentialité | Thé Tip Top';
+    document.title = 'Mentions légales et confidentialité | Thé Tip Top';
     const description =
-      'Consultez le règlement du jeu-concours Thé Tip Top, les mentions légales, les CGU et les informations RGPD et cookies.';
+      'Consultez les mentions légales, les conditions d’utilisation, les informations RGPD et les informations cookies du site Thé Tip Top.';
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement('meta');
@@ -63,10 +54,9 @@ export default function Legal() {
     <section className="ttt-section ttt-section--narrow ttt-legal-page">
       <header className="ttt-legal-header">
         <div className="ttt-eyebrow">Informations légales et transparence</div>
-        <h1>Règlement & mentions</h1>
+        <h1>Mentions légales & confidentialité</h1>
         <p>
-          Retrouvez les règles du jeu-concours Thé Tip Top, les conditions d’utilisation du service et les
-          informations relatives à vos données personnelles.
+          Retrouvez les conditions d’utilisation du service et les informations relatives à vos données personnelles.
         </p>
       </header>
 
@@ -153,56 +143,6 @@ export default function Legal() {
               sera portée à la connaissance des utilisateurs. Ces conditions sont soumises au droit français. En cas
               de différend, les parties rechercheront d’abord une solution amiable avant de saisir la juridiction
               compétente.
-            </p>
-          </section>
-
-          <section aria-labelledby="lg-reglement">
-            <h2 id="lg-reglement">Règlement du jeu-concours</h2>
-            <div className="ttt-legal-keyfacts" aria-label="Informations essentielles du jeu">
-              <div><strong>Durée</strong><span>Du 1er au 30 août 2026</span></div>
-              <div><strong>Participation</strong><span>Un code unique par ticket éligible</span></div>
-              <div><strong>Retrait des gains</strong><span>Jusqu’au 29 septembre 2026</span></div>
-            </div>
-
-            <h3>Organisation et conditions de participation</h3>
-            <p>
-              Thé Tip Top organise un jeu-concours dans le cadre de l’ouverture de sa 10e boutique à Nice. Il est
-              ouvert aux personnes disposant d’un ticket remis pour un achat éligible supérieur à 49 € dans une
-              boutique participante. La participation nécessite un compte et la saisie du code unique à 10 caractères
-              figurant sur le ticket de caisse ou la facture. Un code ne peut être utilisé qu’une seule fois.
-            </p>
-
-            <h3>Attribution des gains</h3>
-            <p>
-              Le jeu est 100 % gagnant, dans la limite de 500 000 tickets. Les codes sont générés avant le lancement
-              afin de respecter la répartition annoncée :
-            </p>
-            <ul className="ttt-legal-prizes">
-              {PRIZES.map(([percentage, prize]) => (
-                <li key={percentage}><strong>{percentage}</strong><span>{prize}</span></li>
-              ))}
-            </ul>
-
-            <h3>Réclamation et remise des gains</h3>
-            <p>
-              Le résultat est affiché après validation du code et enregistré dans l’espace personnel. Le participant
-              dispose de 30 jours après la fin du jeu pour retirer son gain, selon les modalités communiquées par Thé
-              Tip Top. Toute demande doit être adressée à <a href="mailto:contact@thetiptop.fr">contact@thetiptop.fr</a>
-              avec les éléments permettant d’identifier le compte et le ticket, sans communiquer de mot de passe.
-            </p>
-
-            <h3>Tirage au sort final</h3>
-            <p>
-              À l’issue du jeu, un tirage au sort désigne le gagnant d’un an de thé, d’une valeur de 360 €. Chaque
-              participant éligible dispose des mêmes chances, indépendamment de son nombre de participations. Le
-              gagnant sera contacté avec les modalités de remise du lot.
-            </p>
-
-            <h3>Fraude, annulation et responsabilité</h3>
-            <p>
-              Tout code falsifié, déjà utilisé ou obtenu frauduleusement est refusé. L’organisateur peut écarter une
-              participation irrégulière et adapter, reporter ou annuler le jeu si des circonstances indépendantes de
-              sa volonté l’exigent, en informant les participants par un moyen approprié.
             </p>
           </section>
 
