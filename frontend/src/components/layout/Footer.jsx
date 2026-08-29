@@ -38,6 +38,17 @@ export default function Footer() {
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, maxWidth: 280 }}>
             Maison de the bio. Jeu-concours 100 % gagnant pour celebrer l'ouverture de nos 10 boutiques.
           </p>
+          <div className="ttt-social-icons" aria-label="Reseaux sociaux">
+            <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram">
+              <span aria-hidden="true">IG</span>
+            </a>
+            <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" aria-label="Facebook">
+              <span aria-hidden="true">f</span>
+            </a>
+            <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer" aria-label="LinkedIn">
+              <span aria-hidden="true">in</span>
+            </a>
+          </div>
         </div>
         <div>
           <div className="ttt-footer-heading">Le jeu</div>
@@ -80,16 +91,10 @@ export default function Footer() {
             </button>
             {newsletterMessage && <span style={{ fontSize: 12.5, color: 'var(--gold-soft)' }}>{newsletterMessage}</span>}
           </form>
-          <div className="ttt-footer-links" style={{ marginTop: 16 }}>
-            <a href="https://www.instagram.com/" target="_blank" rel="noreferrer">Instagram</a>
-            <a href="https://www.facebook.com/" target="_blank" rel="noreferrer">Facebook</a>
-            <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a>
-          </div>
         </div>
         <div>
           <div className="ttt-footer-heading">Légal</div>
           <div className="ttt-footer-links">
-            <Link to={`${ROUTES.about}#reglement-jeu`}>Règlement du jeu</Link>
             <Link to={`${ROUTES.legal}#lg-mentions`}>Mentions légales</Link>
             <Link to={`${ROUTES.legal}#lg-rgpd`}>Confidentialité (RGPD)</Link>
             <Link to={`${ROUTES.legal}#lg-cookies`}>Cookies</Link>
