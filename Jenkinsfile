@@ -19,6 +19,7 @@ pipeline {
     DEFAULT_USER_ROLE_ID = '1'
     DEFAULT_BOUTIQUE_ID = '1'
     DOCKER_IMAGE_BACKUP_DIR = "${WORKSPACE}/docker-image-backups/${BUILD_NUMBER}"
+    CI_COMPOSE_PROJECT_NAME = "furious-duck-ci-${BUILD_NUMBER}"
   }
 
   stages {
@@ -223,11 +224,11 @@ EOF
 VITE_API_URL=
 EOF
 
-            docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+            docker compose -p "${CI_COMPOSE_PROJECT_NAME}" -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
             BACKEND_READY=0
             for i in $(seq 1 30); do
-              if docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
+              if docker compose -p "${CI_COMPOSE_PROJECT_NAME}" -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
                 node -e "fetch('http://localhost:5000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
               then
                 BACKEND_READY=1
@@ -241,16 +242,16 @@ EOF
               exit 1
             fi
 
-            docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
+            docker compose -p "${CI_COMPOSE_PROJECT_NAME}" -f docker-compose.yml -f docker-compose.ci.yml exec -T backend \
               node -e "fetch('http://localhost:5000/api/db/health').then(async r => { console.log(await r.text()); process.exit(r.ok ? 0 : 1) }).catch(e => { console.error(e); process.exit(1) })"
 
-            docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T backend npm run test:integration
+            docker compose -p "${CI_COMPOSE_PROJECT_NAME}" -f docker-compose.yml -f docker-compose.ci.yml exec -T backend npm run test:integration
           '''
         }
       }
       post {
         always {
-          sh 'docker compose -f docker-compose.yml -f docker-compose.ci.yml down || true'
+          sh 'docker compose -p "${CI_COMPOSE_PROJECT_NAME}" -f docker-compose.yml -f docker-compose.ci.yml down --remove-orphans || true'
           sh 'rm -f backend/.env frontend/.env'
         }
       }

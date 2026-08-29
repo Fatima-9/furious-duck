@@ -2,7 +2,21 @@ require("dotenv").config();
 
 const { Pool } = require("pg");
 
-const databaseUrl = process.env.DATABASE_URL;
+function normalizeDatabaseUrl(value) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    url.searchParams.delete("sslmode");
+    return url.toString();
+  } catch {
+    return value;
+  }
+}
+
+const databaseUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
 
 const pool = databaseUrl
   ? new Pool({
