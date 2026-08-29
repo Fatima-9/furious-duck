@@ -5,7 +5,7 @@ const {
   validateRequiredString,
 } = require("./authValidation");
 
-const ALLOWED_STATUSES = ["actif", "inactif", "supprime"];
+const ALLOWED_STATUSES = ["actif", "inactif"];
 
 function normalizeBoutiqueId(value) {
   const boutiqueId = Number(value);
@@ -21,7 +21,7 @@ function normalizeStatus(value, fallback = "actif") {
   const statut = value === undefined ? fallback : String(value).trim();
 
   if (!ALLOWED_STATUSES.includes(statut)) {
-    throw new ApiError(400, "statut must be actif, inactif or supprime");
+    throw new ApiError(400, "statut must be actif or inactif");
   }
 
   return statut;

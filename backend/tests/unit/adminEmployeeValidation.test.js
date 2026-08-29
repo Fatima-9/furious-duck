@@ -57,7 +57,12 @@ describe("adminEmployeeValidation", () => {
       validateUpdateEmployeePayload({
         statut: "archive",
       })
-    ).toThrow("statut must be actif, inactif or supprime");
+    ).toThrow("statut must be actif or inactif");
+    expect(() =>
+      validateUpdateEmployeePayload({
+        statut: "supprime",
+      })
+    ).toThrow("statut must be actif or inactif");
   });
 
   test("rejects empty update payload", () => {

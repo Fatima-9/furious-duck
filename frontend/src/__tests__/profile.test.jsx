@@ -79,7 +79,10 @@ beforeEach(() => {
     employees: [],
     pagination: { page: 1, total_pages: 1, total: 0, has_previous: false, has_next: false },
   });
-  api.getBoutiques.mockResolvedValue([{ id_boutique: 1, nom: 'Paris Centre' }]);
+  api.getBoutiques.mockResolvedValue([
+    { id_boutique: 1, nom: 'Paris Centre' },
+    { id_boutique: 2, nom: 'Boutique test' },
+  ]);
   api.updateMyProfile.mockResolvedValue({ id_user: 1 });
   api.exportMyData.mockResolvedValue({ email: 'client@example.com' });
   api.deleteMyProfile.mockResolvedValue({ id_user: 1 });
@@ -214,10 +217,18 @@ describe('Profile page', () => {
     expect(screen.getByText('CD34EF56GH')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Filtrer par email'), 'client@example.com');
+    await user.selectOptions(screen.getByLabelText('Filtrer par lot'), 'coffret decouverte 39 euros');
+    await user.selectOptions(screen.getByLabelText('Filtrer par statut'), 'utilise');
+    await user.selectOptions(screen.getByLabelText('Filtrer par remise'), 'false');
     await user.click(screen.getByRole('button', { name: 'Rechercher' }));
 
     expect(api.getClientParticipations).toHaveBeenLastCalledWith(expect.objectContaining({
-      filters: expect.objectContaining({ email: 'client@example.com' }),
+      filters: expect.objectContaining({
+        email: 'client@example.com',
+        gain: 'coffret decouverte 39 euros',
+        statut: 'utilise',
+        remis: 'false',
+      }),
     }));
 
     await user.click(screen.getByRole('button', { name: 'Marquer remis' }));
@@ -254,6 +265,7 @@ describe('Profile page', () => {
 
     expect(await screen.findByText('Gestion des employes')).toBeInTheDocument();
     expect(screen.getByText('vendeur@example.com')).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Supprime' })).not.toBeInTheDocument();
 
     await user.click(screen.getAllByRole('button', { name: 'Modifier' })[0]);
     const employeeNameField = screen.getByDisplayValue('Durand');
@@ -282,6 +294,17 @@ describe('Profile page', () => {
       prenom: 'Nina',
       email: 'nina@example.com',
       boutique_id: 1,
+    }));
+
+    await user.selectOptions(screen.getByLabelText('Filtrer employe par boutique'), 'Paris Centre');
+    await user.selectOptions(screen.getByLabelText('Filtrer employe par statut'), 'actif');
+    await user.click(screen.getAllByRole('button', { name: 'Rechercher' })[1]);
+
+    expect(api.getEmployees).toHaveBeenLastCalledWith(expect.objectContaining({
+      filters: expect.objectContaining({
+        boutique: 'Paris Centre',
+        statut: 'actif',
+      }),
     }));
 
     await user.click(screen.getByRole('button', { name: 'Supprimer' }));
