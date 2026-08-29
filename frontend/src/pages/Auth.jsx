@@ -232,7 +232,7 @@ export default function Auth() {
               <input type="checkbox" required style={{ marginTop: 2, accentColor: 'var(--green)', width: 15, height: 15 }} />
               <span>
                 J'accepte le{' '}
-                <a onClick={() => navigate(`${ROUTES.legal}#lg-reglement`)} style={{ color: 'var(--green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>
+                <a onClick={() => navigate(`${ROUTES.about}#reglement-jeu`)} style={{ color: 'var(--green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>
                   reglement du jeu
                 </a>{' '}
                 et la{' '}

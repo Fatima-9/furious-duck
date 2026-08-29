@@ -5,6 +5,14 @@ import Card from '../components/ui/Card';
 import FaqItem from '../components/ui/FaqItem';
 import { trackParticipationClick } from '../utils/analytics';
 
+const PRIZES = [
+  ['60 %', 'Un infuseur à thé'],
+  ['20 %', 'Une boîte de 100 g de thé détox ou d’infusion'],
+  ['10 %', 'Une boîte de 100 g de thé signature'],
+  ['6 %', 'Un coffret découverte d’une valeur de 39 €'],
+  ['4 %', 'Un coffret découverte d’une valeur de 69 €'],
+];
+
 export default function About() {
   const navigate = useNavigate();
 
@@ -96,10 +104,15 @@ export default function About() {
         </div>
       </section>
 
-      <section className="ttt-section ttt-section--tight" style={{ paddingTop: 20, paddingBottom: 80 }}>
+      <section id="reglement-jeu" className="ttt-section ttt-section--tight" style={{ paddingTop: 20, paddingBottom: 80 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div className="ttt-eyebrow">Le jeu en bref</div>
           <h2 style={{ fontWeight: 600, fontSize: 34, margin: 0 }}>Les règles essentielles.</h2>
+        </div>
+        <div className="ttt-legal-keyfacts" aria-label="Informations essentielles du jeu" style={{ marginBottom: 24 }}>
+          <div><strong>Durée</strong><span>Du 1er au 30 septembre 2026</span></div>
+          <div><strong>Participation</strong><span>Un code unique par ticket éligible</span></div>
+          <div><strong>Réclamation</strong><span>Jusqu’au 30 octobre 2026</span></div>
         </div>
         <FaqItem question="Qui peut participer ?">
           Toute personne majeure résidant en France métropolitaine, dans la limite d'une participation par code.
@@ -113,6 +126,24 @@ export default function About() {
         <FaqItem question="Quel est le gros lot ?">
           À l'issue du jeu-concours, un tirage au sort est effectué parmi tous les participants afin de déterminer le
           gagnant d'un an de thé, d'une valeur de 360 €.
+        </FaqItem>
+        <FaqItem question="Comment les lots sont attribués ?">
+          Le jeu est 100 % gagnant, dans la limite de 500 000 tickets. Les codes sont générés avant le lancement afin
+          de respecter la répartition annoncée.
+          <ul className="ttt-legal-prizes" style={{ marginTop: 14 }}>
+            {PRIZES.map(([percentage, prize]) => (
+              <li key={percentage}><strong>{percentage}</strong><span>{prize}</span></li>
+            ))}
+          </ul>
+        </FaqItem>
+        <FaqItem question="Comment récupérer mon lot ?">
+          Le résultat est affiché après validation du code et enregistré dans l’espace personnel. Le participant dispose
+          de 30 jours après la fin du jeu pour retirer son gain, selon les modalités communiquées par Thé Tip Top.
+        </FaqItem>
+        <FaqItem question="Que se passe-t-il en cas de fraude ?">
+          Tout code falsifié, déjà utilisé ou obtenu frauduleusement est refusé. L’organisateur peut écarter une
+          participation irrégulière et adapter, reporter ou annuler le jeu si des circonstances indépendantes de sa
+          volonté l’exigent.
         </FaqItem>
         <div style={{ textAlign: 'center', marginTop: 28 }}>
           <Button variant="solid" size="lg" style={{ padding: '15px 30px', fontSize: 15 }} onClick={goToPlay}>

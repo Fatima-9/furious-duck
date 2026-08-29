@@ -89,7 +89,7 @@ export default function Footer() {
         <div>
           <div className="ttt-footer-heading">Légal</div>
           <div className="ttt-footer-links">
-            <Link to={`${ROUTES.legal}#lg-reglement`}>Règlement du jeu</Link>
+            <Link to={`${ROUTES.about}#reglement-jeu`}>Règlement du jeu</Link>
             <Link to={`${ROUTES.legal}#lg-mentions`}>Mentions légales</Link>
             <Link to={`${ROUTES.legal}#lg-rgpd`}>Confidentialité (RGPD)</Link>
             <Link to={`${ROUTES.legal}#lg-cookies`}>Cookies</Link>

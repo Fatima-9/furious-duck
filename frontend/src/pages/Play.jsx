@@ -174,7 +174,7 @@ export default function Play() {
           FAQ
         </a>{' '}
         ou le{' '}
-        <a onClick={() => navigate(`${ROUTES.legal}#lg-reglement`)} style={{ color: 'var(--green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>
+        <a onClick={() => navigate(`${ROUTES.about}#reglement-jeu`)} style={{ color: 'var(--green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>
           reglement
         </a>
         .
