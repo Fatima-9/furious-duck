@@ -116,6 +116,19 @@ EOF
       }
     }
 
+    stage('Frontend Tests And Coverage') {
+      steps {
+        dir('frontend') {
+          sh 'npm run test:coverage'
+        }
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'frontend/coverage/**', allowEmptyArchive: true
+        }
+      }
+    }
+
     stage('SonarCloud Analysis') {
       steps {
         withCredentials([

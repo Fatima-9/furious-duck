@@ -12,4 +12,23 @@ export default defineConfig({
       'furious-duck-dev-live-frontend-2',
     ],
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setupTests.jsx',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{js,jsx}'],
+      exclude: [
+        'src/main.jsx',
+        'src/test/**',
+        'src/**/*.test.{js,jsx}',
+      ],
+      thresholds: {
+        lines: 80,
+      },
+    },
+  },
 })
