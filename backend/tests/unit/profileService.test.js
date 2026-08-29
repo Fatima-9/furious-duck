@@ -4,6 +4,10 @@ jest.mock("../../models/Utilisateur", () => ({
   update: jest.fn(),
 }));
 
+jest.mock("../../models/Role", () => ({
+  findById: jest.fn(),
+}));
+
 jest.mock("../../config/db", () => ({
   pool: {
     connect: jest.fn(),
@@ -15,6 +19,7 @@ jest.mock("../../services/emailService", () => ({
 }));
 
 const { pool } = require("../../config/db");
+const Role = require("../../models/Role");
 const Utilisateur = require("../../models/Utilisateur");
 const profileService = require("../../services/profileService");
 const emailService = require("../../services/emailService");
@@ -36,6 +41,7 @@ describe("profileService", () => {
       role_id: 1,
       statut: "actif",
     });
+    Role.findById.mockResolvedValue({ id_role: 1, libelle: "client" });
     pool.connect.mockResolvedValue(client);
     client.query
       .mockResolvedValueOnce({})
@@ -72,16 +78,17 @@ describe("profileService", () => {
     expect(result.mot_de_passe).toBeUndefined();
   });
 
-  test("rejects admin profile deletion", async () => {
+  test("rejects non-client profile deletion", async () => {
     Utilisateur.findById.mockResolvedValue({
       id_user: 2,
       email: "admin@example.com",
       role_id: 2,
       statut: "actif",
     });
+    Role.findById.mockResolvedValue({ id_role: 2, libelle: "admin" });
 
     await expect(profileService.deleteProfile(2)).rejects.toThrow(
-      "admin account cannot be deleted"
+      "only client accounts can delete themselves"
     );
     expect(Utilisateur.update).not.toHaveBeenCalled();
     expect(pool.connect).not.toHaveBeenCalled();
@@ -109,6 +116,7 @@ describe("profileService", () => {
       role_id: 1,
       statut: "actif",
     });
+    Role.findById.mockResolvedValue({ id_role: 1, libelle: "client" });
     pool.connect.mockResolvedValue(client);
     client.query
       .mockResolvedValueOnce({})
@@ -133,6 +141,7 @@ describe("profileService", () => {
       role_id: 1,
       statut: "actif",
     });
+    Role.findById.mockResolvedValue({ id_role: 1, libelle: "client" });
     pool.connect.mockResolvedValue(client);
     client.query
       .mockResolvedValueOnce({})

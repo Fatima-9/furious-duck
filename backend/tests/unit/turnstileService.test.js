@@ -74,7 +74,11 @@ describe("turnstileService", () => {
     const { verifyTurnstileToken } = require("../../services/turnstileService");
 
     await expect(verifyTurnstileToken("token", "127.0.0.1")).resolves.toBe(true);
-    const body = global.fetch.mock.calls[0][1].body;
+    const options = global.fetch.mock.calls[0][1];
+    expect(options.headers).toEqual({
+      "Content-Type": "application/x-www-form-urlencoded",
+    });
+    const body = options.body;
     expect(body.get("secret")).toBe("secret");
     expect(body.get("response")).toBe("token");
     expect(body.get("remoteip")).toBe("127.0.0.1");

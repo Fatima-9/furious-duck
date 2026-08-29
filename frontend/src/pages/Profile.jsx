@@ -52,6 +52,10 @@ const employeeFormInitial = {
   statut: 'actif',
 };
 
+const adultBirthDateLimit = new Date();
+adultBirthDateLimit.setFullYear(adultBirthDateLimit.getFullYear() - 18);
+const adultBirthDateMax = adultBirthDateLimit.toISOString().slice(0, 10);
+
 function formatDate(value) {
   if (!value) return '-';
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
@@ -87,6 +91,8 @@ export default function Profile() {
   const [profileDraft, setProfileDraft] = useState({});
   const [savingProfile, setSavingProfile] = useState(false);
   const [deletingProfile, setDeletingProfile] = useState(false);
+  const [profileAgeError, setProfileAgeError] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -151,6 +157,13 @@ export default function Profile() {
 
   async function submitProfile(event) {
     event.preventDefault();
+
+    if (profileForm.date_de_naissance && profileForm.date_de_naissance > adultBirthDateMax) {
+      setProfileAgeError('Vous devez avoir au moins 18 ans pour participer au jeu-concours.');
+      return;
+    }
+
+    setProfileAgeError('');
     setSavingProfile(true);
 
     try {
@@ -171,8 +184,6 @@ export default function Profile() {
       return;
     }
 
-    if (!window.confirm('Supprimer votre compte ? Cette action desactive votre compte.')) return;
-
     setDeletingProfile(true);
 
     try {
@@ -184,6 +195,7 @@ export default function Profile() {
       fireToast(error.message);
     } finally {
       setDeletingProfile(false);
+      setDeleteConfirmOpen(false);
     }
   }
 
@@ -207,6 +219,7 @@ export default function Profile() {
   const gains = history || [];
   const pendingCount = gains.filter((item) => !item.remis).length;
   const roleName = getRoleDisplayName(user);
+  const canDeleteOwnProfile = canParticipate(user);
   const staffRows = staffData?.participations || [];
   const staffStats = staffData?.stats || {
     total_participations: 0,
@@ -686,7 +699,19 @@ export default function Profile() {
             </FieldRow>
             <input className="ttt-table-filter" required type="email" placeholder="Email" value={profileForm.email} onChange={(event) => updateProfileForm('email', event.target.value)} />
             <FieldRow>
-              <input className="ttt-table-filter" type="date" value={profileForm.date_de_naissance} onChange={(event) => updateProfileForm('date_de_naissance', event.target.value)} />
+              <input
+                aria-label="Date de naissance"
+                className="ttt-table-filter"
+                type="date"
+                max={adultBirthDateMax}
+                value={profileForm.date_de_naissance}
+                onChange={(event) => {
+                  updateProfileForm('date_de_naissance', event.target.value);
+                  setProfileAgeError(event.target.value && event.target.value > adultBirthDateMax
+                    ? 'Vous devez avoir au moins 18 ans pour participer au jeu-concours.'
+                    : '');
+                }}
+              />
               <select className="ttt-table-filter" value={profileForm.sexe} onChange={(event) => updateProfileForm('sexe', event.target.value)}>
                 <option value="">Non precise</option>
                 <option value="F">Femme</option>
@@ -694,6 +719,11 @@ export default function Profile() {
                 <option value="N">Non precise</option>
               </select>
             </FieldRow>
+            {profileAgeError && (
+              <div role="alert" style={{ marginTop: -4, fontSize: 12.5, color: '#9B2C2C', lineHeight: 1.45 }}>
+                {profileAgeError}
+              </div>
+            )}
             <Button type="submit" variant="solid" size="sm" disabled={savingProfile}>
               {savingProfile ? 'Modification...' : 'Modifier mes informations'}
             </Button>
@@ -708,17 +738,76 @@ export default function Profile() {
             Exporter mes donnees
           </Button>
           <div style={{ marginTop: 12 }}>
-            <Button variant="danger" size="sm" disabled={isAdmin(user) || deletingProfile} onClick={removeMyProfile}>
+            <Button variant="danger" size="sm" disabled={!canDeleteOwnProfile || deletingProfile} onClick={() => setDeleteConfirmOpen(true)}>
               {deletingProfile ? 'Suppression...' : 'Supprimer mon compte'}
             </Button>
           </div>
-          {isAdmin(user) && (
+          {!canDeleteOwnProfile && (
             <p style={{ margin: '10px 0 0', fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5 }}>
-              Le compte administrateur ne peut pas etre supprime.
+              Seuls les comptes clients peuvent etre supprimes depuis cet espace. Les comptes employes sont geres par un administrateur.
             </p>
           )}
         </Card>
       </div>
+      {deleteConfirmOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-profile-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'grid',
+            placeItems: 'center',
+            padding: 24,
+            background: 'rgba(7, 24, 14, .55)',
+          }}
+        >
+          <div
+            className="card"
+            style={{
+              width: 'min(100%, 430px)',
+              padding: 28,
+              textAlign: 'center',
+              boxShadow: '0 30px 70px -35px rgba(0,0,0,.55)',
+            }}
+          >
+            <div
+              aria-hidden="true"
+              style={{
+                width: 58,
+                height: 58,
+                margin: '0 auto 14px',
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                background: '#F8E8E8',
+                color: '#9B2C2C',
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 32,
+                fontWeight: 700,
+              }}
+            >
+              !
+            </div>
+            <h2 id="delete-profile-title" style={{ margin: '0 0 10px', fontSize: 26, fontWeight: 600 }}>
+              Supprimer votre compte ?
+            </h2>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--muted)', lineHeight: 1.6 }}>
+              Cette action supprime definitivement votre compte client. Vos anciens tickets seront conserves sans lien direct avec votre profil.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setDeleteConfirmOpen(false)} disabled={deletingProfile}>
+                Garder mon compte
+              </Button>
+              <Button type="button" variant="danger" size="sm" onClick={removeMyProfile} disabled={deletingProfile}>
+                {deletingProfile ? 'Suppression...' : 'Oui, supprimer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

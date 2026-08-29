@@ -1,4 +1,5 @@
 const ApiError = require("../utils/apiError");
+const { validateAdultBirthDate } = require("./authValidation");
 
 // Seuls ces champs sont modifiables par l'utilisateur lui-meme.
 // role_id, boutique_id et statut en sont volontairement absents.
@@ -56,13 +57,7 @@ function validateUpdateProfilePayload(body) {
   }
 
   if (body.date_de_naissance !== undefined) {
-    const date = new Date(body.date_de_naissance);
-
-    if (Number.isNaN(date.getTime())) {
-      throw new ApiError(400, "date_de_naissance must be a valid date");
-    }
-
-    updates.date_de_naissance = body.date_de_naissance;
+    updates.date_de_naissance = validateAdultBirthDate(body.date_de_naissance);
   }
 
   if (body.sexe !== undefined) {

@@ -1,5 +1,7 @@
 const bcrypt = require("bcrypt");
 const { pool } = require("../config/db");
+const { ROLES } = require("../config/roles");
+const Role = require("../models/Role");
 const Utilisateur = require("../models/Utilisateur");
 const ApiError = require("../utils/apiError");
 const { sanitizeUser } = require("../utils/userPresenter");
@@ -73,12 +75,13 @@ async function deleteProfile(userId) {
     throw new ApiError(404, "user not found");
   }
 
-  if (Number(user.role_id) === Number(process.env.ADMIN_ROLE_ID || 2)) {
-    throw new ApiError(403, "admin account cannot be deleted");
-  }
-
   if (!pool) {
     throw new ApiError(500, "DATABASE_URL is not configured");
+  }
+
+  const role = await Role.findById(user.role_id);
+  if (!role || role.libelle !== ROLES.CLIENT) {
+    throw new ApiError(403, "only client accounts can delete themselves");
   }
 
   const client = await pool.connect();
