@@ -116,24 +116,22 @@ EOF
       }
     }
 
-    stage('SonarQube Quality Gate') {
+    stage('SonarCloud Analysis') {
       steps {
         withCredentials([
           string(credentialsId: 'furious-duck-sonarqube-host-url', variable: 'SONAR_HOST_URL'),
           string(credentialsId: 'furious-duck-sonarqube-token', variable: 'SONAR_TOKEN')
         ]) {
-          sh '''
-            docker run --rm \
-              -e SONAR_HOST_URL="${SONAR_HOST_URL}" \
-              -e SONAR_TOKEN="${SONAR_TOKEN}" \
-              --volumes-from furious_duck_jenkins \
-              -w "${WORKSPACE}" \
-              sonarsource/sonar-scanner-cli:latest \
-              -Dsonar.host.url="${SONAR_HOST_URL}" \
-              -Dsonar.token="${SONAR_TOKEN}" \
-              -Dsonar.qualitygate.wait=true \
-              -Dsonar.qualitygate.timeout=300
-          '''
+          script {
+            def scannerHome = tool 'SonarScanner'
+            sh """
+              ${scannerHome}/bin/sonar-scanner \
+                -Dsonar.host.url=${SONAR_HOST_URL} \
+                -Dsonar.token=${SONAR_TOKEN} \
+                -Dsonar.qualitygate.wait=true \
+                -Dsonar.qualitygate.timeout=300
+            """
+          }
         }
       }
     }
