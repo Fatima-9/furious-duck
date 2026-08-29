@@ -26,6 +26,9 @@ async function verifyTurnstileToken(token, remoteIp) {
 
   const response = await fetch(TURNSTILE_VERIFY_URL, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
     body: formData,
   });
 

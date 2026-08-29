@@ -50,6 +50,17 @@ describe("profileValidation", () => {
     expect(() => validateUpdateProfilePayload({ sexe: " " })).toThrow("sexe is required");
   });
 
+  test("rejects profile birth dates under 18 years old", () => {
+    const birthDate = new Date();
+    birthDate.setFullYear(birthDate.getFullYear() - 17);
+
+    expect(() =>
+      validateUpdateProfilePayload({
+        date_de_naissance: birthDate.toISOString().slice(0, 10),
+      })
+    ).toThrow("Vous devez avoir au moins 18 ans pour participer.");
+  });
+
   test("validates password change aliases and minimum length", () => {
     expect(
       validateChangePasswordPayload({

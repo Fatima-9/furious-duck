@@ -128,10 +128,41 @@ describe('Profile page', () => {
     expect(globalThis.URL.createObjectURL).toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Supprimer mon compte' }));
-    expect(window.confirm).toHaveBeenCalled();
+
+    expect(screen.getByRole('dialog', { name: 'Supprimer votre compte ?' })).toBeInTheDocument();
+    expect(screen.getByText(/supprime definitivement votre compte client/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
+
+    expect(window.confirm).not.toHaveBeenCalled();
     expect(api.deleteMyProfile).toHaveBeenCalled();
     expect(signOut).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith('/', { replace: true });
+  });
+
+  it('blocks profile updates when the birth date is under 18 years old', async () => {
+    const user = userEvent.setup();
+
+    renderProfile({
+      id_user: 1,
+      role: 'client',
+      prenom: 'Camille',
+      nom: 'Martin',
+      email: 'client@example.com',
+      date_de_naissance: '1995-04-12',
+      sexe: 'F',
+      date_inscription: '2026-09-01T10:00:00.000Z',
+    });
+
+    const birthDateField = screen.getByLabelText('Date de naissance');
+    await user.clear(birthDateField);
+    await user.type(birthDateField, '2026-08-13');
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Vous devez avoir au moins 18 ans');
+
+    await user.click(screen.getByRole('button', { name: 'Modifier mes informations' }));
+
+    expect(api.updateMyProfile).not.toHaveBeenCalled();
   });
 
   it('shows loading state before an authenticated session is available', () => {
@@ -257,7 +288,21 @@ describe('Profile page', () => {
     expect(api.deleteEmployee).toHaveBeenCalledWith(3);
 
     expect(screen.getByRole('button', { name: 'Supprimer mon compte' })).toBeDisabled();
-    expect(screen.getByText('Le compte administrateur ne peut pas etre supprime.')).toBeInTheDocument();
+    expect(screen.getByText(/Seuls les comptes clients peuvent etre supprimes/i)).toBeInTheDocument();
+  });
+
+  it('does not let an employee delete their own account from the profile page', async () => {
+    renderProfile({
+      id_user: 3,
+      role: 'employe_boutique',
+      prenom: 'Lea',
+      email: 'vendeur@example.com',
+      date_inscription: '2026-09-01T10:00:00.000Z',
+    });
+
+    expect(await screen.findByText('Participations clients')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Supprimer mon compte' })).toBeDisabled();
+    expect(screen.getByText(/Les comptes employes sont geres par un administrateur/i)).toBeInTheDocument();
   });
 
   it('shows API errors as toast messages', async () => {
