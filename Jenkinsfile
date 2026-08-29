@@ -130,6 +130,12 @@ EOF
     }
 
     stage('SonarCloud Analysis') {
+      when {
+        expression {
+          def branch = env.BRANCH_NAME ?: env.GIT_BRANCH?.replace('origin/', '')
+          return branch == 'main'
+        }
+      }
       steps {
         withCredentials([
           string(credentialsId: 'furious-duck-sonarqube-host-url', variable: 'SONAR_HOST_URL'),
@@ -137,14 +143,12 @@ EOF
         ]) {
           script {
             def scannerHome = tool 'SonarScanner'
-            def branch = env.BRANCH_NAME ?: env.GIT_BRANCH?.replace('origin/', '') ?: 'local'
 
-            withEnv(["SONAR_SCANNER_HOME=${scannerHome}", "SONAR_BRANCH_NAME=${branch}"]) {
+            withEnv(["SONAR_SCANNER_HOME=${scannerHome}"]) {
               sh '''
                 "$SONAR_SCANNER_HOME/bin/sonar-scanner" \
                   -Dsonar.host.url="$SONAR_HOST_URL" \
                   -Dsonar.token="$SONAR_TOKEN" \
-                  -Dsonar.branch.name="$SONAR_BRANCH_NAME" \
                   -Dsonar.qualitygate.wait=true \
                   -Dsonar.qualitygate.timeout=300
               '''
