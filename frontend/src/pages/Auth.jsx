@@ -28,6 +28,7 @@ export default function Auth() {
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, signUp, refreshProfile } = useAuth();
@@ -42,6 +43,12 @@ export default function Auth() {
   function switchMode(nextMode) {
     setMode(nextMode);
     setTurnstileToken('');
+    setTurnstileResetKey((current) => current + 1);
+  }
+
+  function resetTurnstile() {
+    setTurnstileToken('');
+    setTurnstileResetKey((current) => current + 1);
   }
 
   async function submit(e) {
@@ -79,7 +86,7 @@ export default function Auth() {
 
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setTurnstileToken('');
+      resetTurnstile();
       fireToast(error.message);
     } finally {
       setSubmitting(false);
@@ -246,7 +253,7 @@ export default function Auth() {
           {turnstileSiteKey && (
             <div style={{ display: 'flex', justifyContent: 'center', minHeight: 65 }}>
               <Turnstile
-                key={mode}
+                key={`${mode}-${turnstileResetKey}`}
                 siteKey={turnstileSiteKey}
                 options={{
                   theme: 'light',
