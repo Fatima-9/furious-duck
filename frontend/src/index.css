@@ -204,8 +204,86 @@ summary::-webkit-details-marker {
   color: #fff;
 }
 
+.ttt-sitemap-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.ttt-sitemap-group {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.85fr) minmax(0, 1.4fr);
+  gap: 24px;
+  padding: 22px 0;
+  border-top: 1px solid var(--border);
+}
+
+.ttt-sitemap-group:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.ttt-sitemap-group h2 {
+  margin: 0 0 8px;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--green);
+}
+
+.ttt-sitemap-group p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 13.5px;
+}
+
+.ttt-sitemap-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ttt-sitemap-link {
+  display: grid;
+  gap: 4px;
+  padding: 14px 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.ttt-sitemap-link:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 14px 30px -24px rgba(19, 44, 25, 0.4);
+  transform: translateY(-1px);
+}
+
+.ttt-sitemap-link span {
+  color: var(--green);
+  font-weight: 800;
+}
+
+.ttt-sitemap-link small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 @media (max-width: 720px) {
   .ttt-section {
     padding: 40px 20px;
+  }
+
+  .ttt-sitemap-group,
+  .ttt-sitemap-links {
+    grid-template-columns: 1fr;
+  }
+
+  .ttt-sitemap-group {
+    gap: 12px;
   }
 }
