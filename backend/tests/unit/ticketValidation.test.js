@@ -11,6 +11,10 @@ describe("ticketValidation", () => {
     );
   });
 
+  test("rejects a missing code", () => {
+    expect(() => normalizeTicketCode(" ")).toThrow("code_ticket is required");
+  });
+
   test("rejects special characters", () => {
     expect(() => normalizeTicketCode("ABC12345!?")).toThrow(
       "code_ticket must contain 10 letters or digits"

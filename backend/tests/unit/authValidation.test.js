@@ -91,6 +91,19 @@ describe("authValidation", () => {
     ).toThrow("Vous devez avoir au moins 18 ans pour participer.");
   });
 
+  test("rejects register payload when birth date is invalid", () => {
+    expect(() =>
+      validateRegisterPayload({
+        nom: "Duck",
+        prenom: "Furious",
+        email: "user@example.com",
+        mot_de_passe: "Password123!",
+        date_de_naissance: "not-a-date",
+        turnstile_token: "test-turnstile-token",
+      })
+    ).toThrow("date_de_naissance must be a valid date");
+  });
+
   test("normalizes a valid oauth payload", () => {
     const payload = validateOAuthPayload({
       provider: " Google ",

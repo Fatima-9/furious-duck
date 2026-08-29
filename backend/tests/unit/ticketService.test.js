@@ -45,6 +45,10 @@ describe("ticketService", () => {
     codes.forEach((code) => expect(code).toMatch(/^[A-Z0-9]{10}$/));
   });
 
+  test("toPublicTicket returns null for empty rows", () => {
+    expect(ticketService.toPublicTicket(null)).toBeNull();
+  });
+
   test("getParticipationState marks an available ticket as usable", () => {
     expect(ticketService.getParticipationState(createAvailableTicket())).toEqual({
       exists: true,
@@ -67,6 +71,30 @@ describe("ticketService", () => {
       canParticipate: false,
       reason: "already_used",
     });
+  });
+
+  test("getParticipationState rejects tickets before start, after claim end or inactive campaign", () => {
+    const future = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const past = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    expect(
+      ticketService.getParticipationState(createAvailableTicket({ date_debut: future }))
+    ).toMatchObject({ canParticipate: false, reason: "campaign_not_started" });
+
+    expect(
+      ticketService.getParticipationState(
+        createAvailableTicket({
+          date_fin_reclamation: null,
+          date_fin: past,
+        })
+      )
+    ).toMatchObject({ canParticipate: false, reason: "campaign_finished" });
+
+    expect(
+      ticketService.getParticipationState(
+        createAvailableTicket({ campagne_statut: "terminee" })
+      )
+    ).toMatchObject({ canParticipate: false, reason: "campaign_inactive" });
   });
 
   test("verifyTicket returns a public availability response", async () => {
@@ -164,6 +192,106 @@ describe("ticketService", () => {
       message: "ticket cannot be used: already_used",
     });
 
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalled();
+  });
+
+  test("participateWithTicket rejects a missing ticket", async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+
+    pool.connect.mockResolvedValueOnce(client);
+    client.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({});
+
+    await expect(
+      ticketService.participateWithTicket(7, "AB12CD34EF")
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      message: "ticket not found",
+    });
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalled();
+  });
+
+  test("getUserGainHistory returns public tickets", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [createAvailableTicket()] });
+
+    const result = await ticketService.getUserGainHistory(7);
+
+    expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("WHERE t.utilisateur_id = $1"), [7]);
+    expect(result[0]).toMatchObject({
+      code_ticket: "AB12CD34EF",
+      gain: { libelle: "Infuseur a the" },
+      campagne: { id_campagne: 3 },
+    });
+  });
+
+  test("generateCampaignTickets validates total and dates", async () => {
+    await expect(
+      ticketService.generateCampaignTickets({ totalTickets: 0 })
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: "totalTickets must be a positive integer",
+    });
+
+    await expect(
+      ticketService.generateCampaignTickets({
+        totalTickets: 10,
+        dateDebut: "not-a-date",
+      })
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: "campaign dates must be valid",
+    });
+  });
+
+  test("generateCampaignTickets creates campaign, prizes and ticket batches", async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+
+    pool.connect.mockResolvedValueOnce(client);
+    client.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id_campagne: 4, nom: "Campagne" }] })
+      .mockResolvedValue({ rows: [{ id_gain: 9, libelle: "Lot" }] });
+
+    const result = await ticketService.generateCampaignTickets({
+      totalTickets: 10,
+      campaignName: "Campagne",
+      dateDebut: "2026-09-01",
+      dateFin: "2026-09-30",
+      dateFinReclamation: "2026-10-30",
+    });
+
+    expect(result.campaign).toEqual({ id_campagne: 4, nom: "Campagne" });
+    expect(result.totalTickets).toBe(10);
+    expect(client.query).toHaveBeenCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalled();
+  });
+
+  test("generateCampaignTickets rolls back on insert failure", async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+
+    pool.connect.mockResolvedValueOnce(client);
+    client.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id_campagne: 4, nom: "Campagne" }] })
+      .mockRejectedValueOnce(new Error("insert failed"))
+      .mockResolvedValueOnce({});
+
+    await expect(
+      ticketService.generateCampaignTickets({ totalTickets: 10 })
+    ).rejects.toThrow("insert failed");
     expect(client.query).toHaveBeenCalledWith("ROLLBACK");
     expect(client.release).toHaveBeenCalled();
   });

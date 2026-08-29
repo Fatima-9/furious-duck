@@ -45,6 +45,10 @@ describe("isClaimPeriodOver", () => {
 });
 
 describe("toGainView", () => {
+  test("returns null for empty rows", () => {
+    expect(boutiqueService.toGainView(null)).toBeNull();
+  });
+
   test("marks a won, undelivered ticket as deliverable", () => {
     const view = boutiqueService.toGainView(buildRow());
 
@@ -118,5 +122,131 @@ describe("listClientParticipations", () => {
       expect.stringContaining("LIMIT $3"),
       ["%marie%", false, 10, 10]
     );
+  });
+
+  test("normalizes invalid pagination and empty count rows", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await boutiqueService.listClientParticipations({
+      page: "bad",
+      limit: "999",
+      filters: {
+        code_ticket: " ABC ",
+        nom: " Dupont ",
+        prenom: " Marie ",
+        gain: " Infuseur ",
+        statut: " utilise ",
+        date_utilisation: "2026-09",
+      },
+    });
+
+    expect(result.pagination).toMatchObject({
+      page: 1,
+      limit: 50,
+      total: 0,
+      total_pages: 1,
+      has_previous: false,
+      has_next: false,
+    });
+    expect(pool.query.mock.calls[0][1]).toEqual([
+      "%ABC%",
+      "%Dupont%",
+      "%Marie%",
+      "%Infuseur%",
+      "%utilise%",
+      "2026-09%",
+    ]);
+  });
+
+  test("findGainByTicketCode returns a gain or rejects a missing ticket", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [buildRow()] });
+
+    await expect(
+      boutiqueService.findGainByTicketCode("ABCDEFGH12")
+    ).resolves.toMatchObject({
+      code_ticket: "ABCDEFGH12",
+      gain: { libelle: "Infuseur a the" },
+    });
+
+    pool.query.mockResolvedValueOnce({ rows: [] });
+    await expect(
+      boutiqueService.findGainByTicketCode("MISSING1234")
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      message: "ticket not found",
+    });
+  });
+
+  test("findGainsByWinner searches by name and maps gains", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [buildRow()] });
+
+    const result = await boutiqueService.findGainsByWinner({
+      type: "nom",
+      value: "Dupont",
+    });
+
+    expect(pool.query.mock.calls[0][1]).toEqual(["%Dupont%"]);
+    expect(result[0].gagnant.email).toBe("marie@example.com");
+  });
+
+  test("markTicketAsRemis marks a deliverable prize", async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+
+    pool.connect.mockResolvedValueOnce(client);
+    client.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [buildRow()] })
+      .mockResolvedValueOnce({
+        rows: [{ remis: true, date_remise: new Date(), remis_par: 12 }],
+      })
+      .mockResolvedValueOnce({});
+
+    const result = await boutiqueService.markTicketAsRemis("ABCDEFGH12", 12);
+
+    expect(result.remis).toBe(true);
+    expect(result.remis_par).toBe(12);
+    expect(client.query).toHaveBeenCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalled();
+  });
+
+  test("markTicketAsRemis rejects invalid delivery states and rolls back", async () => {
+    const states = [
+      [{ rows: [] }, { statusCode: 404, message: "ticket not found" }],
+      [
+        { rows: [buildRow({ id_user: null })] },
+        { statusCode: 409, message: "ticket has not been used yet" },
+      ],
+      [
+        { rows: [buildRow({ remis: true })] },
+        { statusCode: 409, message: "prize has already been delivered" },
+      ],
+      [
+        { rows: [buildRow({ date_fin_reclamation: HIER })] },
+        { statusCode: 409, message: "claim period is over" },
+      ],
+    ];
+
+    for (const [selectResult, expectedError] of states) {
+      const client = {
+        query: jest.fn(),
+        release: jest.fn(),
+      };
+      pool.connect.mockResolvedValueOnce(client);
+      client.query
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce(selectResult)
+        .mockResolvedValueOnce({});
+
+      await expect(
+        boutiqueService.markTicketAsRemis("ABCDEFGH12", 12)
+      ).rejects.toMatchObject(expectedError);
+      expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+      expect(client.release).toHaveBeenCalled();
+    }
   });
 });

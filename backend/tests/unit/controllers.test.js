@@ -38,6 +38,24 @@ jest.mock("../../services/turnstileService", () => ({
   verifyTurnstileToken: jest.fn(),
 }));
 
+jest.mock("../../services/authService", () => ({
+  register: jest.fn(),
+  login: jest.fn(),
+  oauthLogin: jest.fn(),
+}));
+
+jest.mock("../../services/passwordResetService", () => ({
+  requestPasswordReset: jest.fn(),
+  resetPassword: jest.fn(),
+}));
+
+jest.mock("../../services/profileService", () => ({
+  getProfile: jest.fn(),
+  updateProfile: jest.fn(),
+  changePassword: jest.fn(),
+  deleteProfile: jest.fn(),
+}));
+
 const adminStatsService = require("../../services/adminStatsService");
 const adminEmployeeService = require("../../services/adminEmployeeService");
 const boutiqueService = require("../../services/boutiqueService");
@@ -45,13 +63,18 @@ const ticketService = require("../../services/ticketService");
 const { sendContactMessage } = require("../../services/contactService");
 const { subscribeToNewsletter } = require("../../services/newsletterService");
 const { verifyTurnstileToken } = require("../../services/turnstileService");
+const authService = require("../../services/authService");
+const passwordResetService = require("../../services/passwordResetService");
+const profileService = require("../../services/profileService");
 
 const adminController = require("../../controllers/adminController");
 const adminEmployeeController = require("../../controllers/adminEmployeeController");
+const authController = require("../../controllers/authController");
 const boutiqueController = require("../../controllers/boutiqueController");
 const ticketController = require("../../controllers/ticketController");
 const contactController = require("../../controllers/contactController");
 const newsletterController = require("../../controllers/newsletterController");
+const profileController = require("../../controllers/profileController");
 
 function createResponse() {
   return {
@@ -221,5 +244,115 @@ describe("controllers", () => {
       email: "client@example.com",
     });
     expect(res.status).toHaveBeenLastCalledWith(202);
+  });
+
+  test("handles auth flows", async () => {
+    const res = createResponse();
+    verifyTurnstileToken.mockResolvedValue(true);
+    authService.register.mockResolvedValue({ token: "register-token" });
+    authService.login.mockResolvedValue({ token: "login-token" });
+    authService.oauthLogin.mockResolvedValue({ token: "oauth-token" });
+    passwordResetService.requestPasswordReset.mockResolvedValue({
+      resetToken: "reset-token",
+    });
+    passwordResetService.resetPassword.mockResolvedValue();
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    await authController.register(
+      {
+        ip: "127.0.0.1",
+        body: {
+          nom: "Duck",
+          prenom: "Furious",
+          email: "user@example.com",
+          mot_de_passe: "Password123!",
+          date_de_naissance: "1990-01-01",
+          sexe: "N",
+          turnstile_token: "captcha-token",
+        },
+      },
+      res
+    );
+    expect(res.status).toHaveBeenLastCalledWith(201);
+
+    await authController.login(
+      {
+        ip: "127.0.0.1",
+        body: {
+          email: "user@example.com",
+          mot_de_passe: "Password123!",
+          turnstile_token: "captcha-token",
+        },
+      },
+      res
+    );
+    expect(res.json).toHaveBeenLastCalledWith({
+      status: "success",
+      data: { token: "login-token" },
+    });
+
+    await authController.forgotPassword(
+      { body: { email: "user@example.com" } },
+      res
+    );
+    expect(passwordResetService.requestPasswordReset).toHaveBeenCalledWith({
+      email: "user@example.com",
+    });
+
+    await authController.resetPassword(
+      { body: { token: "token", mot_de_passe: "Password123!" } },
+      res
+    );
+    expect(passwordResetService.resetPassword).toHaveBeenCalled();
+
+    await authController.oauth(
+      { body: { provider: "google", token: "oauth-token" } },
+      res
+    );
+    expect(authService.oauthLogin).toHaveBeenCalledWith({
+      provider: "google",
+      token: "oauth-token",
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  test("handles profile flows", async () => {
+    const res = createResponse();
+    profileService.getProfile.mockResolvedValue({ id_user: 7 });
+    profileService.updateProfile.mockResolvedValue({ id_user: 7, nom: "Duck" });
+    profileService.changePassword.mockResolvedValue();
+    profileService.deleteProfile.mockResolvedValue({ id_user: 7, statut: "supprime" });
+
+    await profileController.getMyProfile({ user: { id_user: 7 } }, res);
+    expect(profileService.getProfile).toHaveBeenCalledWith(7);
+
+    await profileController.updateMyProfile(
+      { user: { id_user: 7 }, body: { nom: "Duck" } },
+      res
+    );
+    expect(profileService.updateProfile).toHaveBeenCalledWith(7, { nom: "Duck" });
+
+    await profileController.changeMyPassword(
+      {
+        user: { id_user: 7 },
+        body: {
+          mot_de_passe_actuel: "OldPassword123!",
+          mot_de_passe: "NewPassword123!",
+        },
+      },
+      res
+    );
+    expect(profileService.changePassword).toHaveBeenCalledWith(7, {
+      mot_de_passe_actuel: "OldPassword123!",
+      mot_de_passe: "NewPassword123!",
+    });
+
+    await profileController.deleteMyProfile({ user: { id_user: 7 } }, res);
+    expect(profileService.deleteProfile).toHaveBeenCalledWith(7);
+    expect(res.json).toHaveBeenLastCalledWith({
+      status: "success",
+      data: { user: { id_user: 7, statut: "supprime" } },
+    });
   });
 });

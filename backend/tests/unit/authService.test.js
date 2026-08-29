@@ -51,6 +51,33 @@ describe("authService", () => {
     );
   });
 
+  test("register rejects an already used email and missing default ids", async () => {
+    Utilisateur.findByEmail.mockResolvedValueOnce({ id_user: 9 });
+
+    await expect(
+      authService.register({
+        nom: "Duck",
+        prenom: "Furious",
+        email: "user@example.com",
+        mot_de_passe: "Password123!",
+      })
+    ).rejects.toMatchObject({ statusCode: 409 });
+
+    Utilisateur.findByEmail.mockResolvedValueOnce(null);
+    delete process.env.DEFAULT_USER_ROLE_ID;
+    await expect(
+      authService.register({
+        nom: "Duck",
+        prenom: "Furious",
+        email: "new@example.com",
+        mot_de_passe: "Password123!",
+      })
+    ).rejects.toMatchObject({
+      statusCode: 500,
+      message: "DEFAULT_USER_ROLE_ID is not configured",
+    });
+  });
+
   test("login rejects invalid credentials", async () => {
     Utilisateur.findByEmail.mockResolvedValue(null);
 
@@ -83,6 +110,55 @@ describe("authService", () => {
 
     expect(result.token).toEqual(expect.any(String));
     expect(result.user.mot_de_passe).toBeUndefined();
+  });
+
+  test("login rejects a wrong password and inactive users", async () => {
+    const hashedPassword = await bcrypt.hash("Password123!", 4);
+
+    Utilisateur.findByEmail.mockResolvedValueOnce({
+      id_user: 1,
+      email: "user@example.com",
+      mot_de_passe: hashedPassword,
+      statut: "actif",
+      role_id: 1,
+    });
+
+    await expect(
+      authService.login({
+        email: "user@example.com",
+        mot_de_passe: "WrongPassword123!",
+      })
+    ).rejects.toMatchObject({ statusCode: 401 });
+
+    Utilisateur.findByEmail.mockResolvedValueOnce({
+      id_user: 1,
+      email: "user@example.com",
+      mot_de_passe: hashedPassword,
+      statut: "bloque",
+      role_id: 1,
+    });
+
+    await expect(
+      authService.login({
+        email: "user@example.com",
+        mot_de_passe: "Password123!",
+      })
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      message: "user account is not active",
+    });
+  });
+
+  test("generateToken requires a JWT secret", () => {
+    delete process.env.JWT_SECRET;
+
+    expect(() =>
+      authService.generateToken({
+        id_user: 1,
+        email: "user@example.com",
+        role_id: 1,
+      })
+    ).toThrow("JWT_SECRET is not configured");
   });
 
   test("oauthLogin creates a user from a verified provider profile", async () => {
@@ -154,6 +230,90 @@ describe("authService", () => {
         oauth_provider: "facebook",
         oauth_subject: "facebook-subject-1",
         type_inscription: "facebook",
+      })
+    );
+  });
+
+  test("oauthLogin returns an existing oauth user", async () => {
+    verifyOAuthToken.mockResolvedValue({
+      subject: "google-subject-1",
+      email: "oauth@example.com",
+      nom: "Duck",
+      prenom: "OAuth",
+    });
+    Utilisateur.findByOAuthIdentity.mockResolvedValue({
+      id_user: 4,
+      email: "oauth@example.com",
+      statut: "actif",
+      role_id: 1,
+    });
+
+    const result = await authService.oauthLogin({
+      provider: "google",
+      token: "google-id-token",
+    });
+
+    expect(result.token).toEqual(expect.any(String));
+    expect(Utilisateur.findByEmail).not.toHaveBeenCalled();
+  });
+
+  test("oauthLogin rejects inactive oauth or email users", async () => {
+    verifyOAuthToken.mockResolvedValue({
+      subject: "google-subject-1",
+      email: "oauth@example.com",
+      nom: "Duck",
+      prenom: "OAuth",
+    });
+    Utilisateur.findByOAuthIdentity.mockResolvedValueOnce({
+      id_user: 4,
+      email: "oauth@example.com",
+      statut: "bloque",
+      role_id: 1,
+    });
+
+    await expect(
+      authService.oauthLogin({ provider: "google", token: "token" })
+    ).rejects.toMatchObject({ statusCode: 403 });
+
+    Utilisateur.findByOAuthIdentity.mockResolvedValueOnce(null);
+    Utilisateur.findByEmail.mockResolvedValueOnce({
+      id_user: 5,
+      email: "oauth@example.com",
+      statut: "bloque",
+      role_id: 1,
+    });
+
+    await expect(
+      authService.oauthLogin({ provider: "google", token: "token" })
+    ).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  test("oauthLogin uses explicit default ids when creating a user", async () => {
+    verifyOAuthToken.mockResolvedValue({
+      subject: "google-subject-2",
+      email: "created@example.com",
+      nom: "Duck",
+      prenom: "OAuth",
+    });
+    Utilisateur.findByOAuthIdentity.mockResolvedValue(null);
+    Utilisateur.findByEmail.mockResolvedValue(null);
+    Utilisateur.create.mockImplementation(async (data) => ({
+      id_user: 6,
+      statut: "actif",
+      ...data,
+    }));
+
+    await authService.oauthLogin({
+      provider: "google",
+      token: "google-id-token",
+      role_id: 3,
+      boutique_id: 4,
+    });
+
+    expect(Utilisateur.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role_id: 3,
+        boutique_id: 4,
       })
     );
   });
