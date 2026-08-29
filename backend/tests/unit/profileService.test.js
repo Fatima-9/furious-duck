@@ -4,10 +4,17 @@ jest.mock("../../models/Utilisateur", () => ({
   update: jest.fn(),
 }));
 
+jest.mock("../../config/db", () => ({
+  pool: {
+    connect: jest.fn(),
+  },
+}));
+
 jest.mock("../../services/emailService", () => ({
   sendPasswordChangedEmail: jest.fn(),
 }));
 
+const { pool } = require("../../config/db");
 const Utilisateur = require("../../models/Utilisateur");
 const profileService = require("../../services/profileService");
 const emailService = require("../../services/emailService");
@@ -18,24 +25,51 @@ describe("profileService", () => {
     jest.clearAllMocks();
   });
 
-  test("soft deletes a non-admin profile", async () => {
+  test("deletes a non-admin profile and detaches related tickets", async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
     Utilisateur.findById.mockResolvedValue({
       id_user: 1,
       email: "client@example.com",
       role_id: 1,
       statut: "actif",
     });
-    Utilisateur.update.mockResolvedValue({
-      id_user: 1,
-      email: "client@example.com",
-      role_id: 1,
-      statut: "supprime",
-    });
+    pool.connect.mockResolvedValue(client);
+    client.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id_user: 1,
+            email: "client@example.com",
+            role_id: 1,
+            statut: "actif",
+            mot_de_passe: "secret",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({});
 
     const result = await profileService.deleteProfile(1);
 
-    expect(Utilisateur.update).toHaveBeenCalledWith(1, { statut: "supprime" });
-    expect(result.statut).toBe("supprime");
+    expect(client.query).toHaveBeenNthCalledWith(1, "BEGIN");
+    expect(client.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("UPDATE tickets"),
+      [1]
+    );
+    expect(client.query).toHaveBeenNthCalledWith(
+      3,
+      "DELETE FROM utilisateurs WHERE id_user = $1 RETURNING *",
+      [1]
+    );
+    expect(client.query).toHaveBeenNthCalledWith(4, "COMMIT");
+    expect(client.release).toHaveBeenCalled();
+    expect(result.email).toBe("client@example.com");
+    expect(result.mot_de_passe).toBeUndefined();
   });
 
   test("rejects admin profile deletion", async () => {
@@ -50,6 +84,7 @@ describe("profileService", () => {
       "admin account cannot be deleted"
     );
     expect(Utilisateur.update).not.toHaveBeenCalled();
+    expect(pool.connect).not.toHaveBeenCalled();
   });
 
   test("rejects deletion when the user does not exist", async () => {
@@ -60,6 +95,58 @@ describe("profileService", () => {
       message: "user not found",
     });
     expect(Utilisateur.update).not.toHaveBeenCalled();
+    expect(pool.connect).not.toHaveBeenCalled();
+  });
+
+  test("rolls back when hard deletion fails", async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    Utilisateur.findById.mockResolvedValue({
+      id_user: 9,
+      email: "client@example.com",
+      role_id: 1,
+      statut: "actif",
+    });
+    pool.connect.mockResolvedValue(client);
+    client.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockRejectedValueOnce(new Error("delete failed"))
+      .mockResolvedValueOnce({});
+
+    await expect(profileService.deleteProfile(9)).rejects.toThrow("delete failed");
+
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalled();
+  });
+
+  test("rolls back when the user disappears during deletion", async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    Utilisateur.findById.mockResolvedValue({
+      id_user: 10,
+      email: "client@example.com",
+      role_id: 1,
+      statut: "actif",
+    });
+    pool.connect.mockResolvedValue(client);
+    client.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({});
+
+    await expect(profileService.deleteProfile(10)).rejects.toMatchObject({
+      statusCode: 404,
+      message: "user not found",
+    });
+
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(client.release).toHaveBeenCalled();
   });
 
   test("returns a sanitized profile", async () => {

@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const { pool } = require("../config/db");
 const Utilisateur = require("../models/Utilisateur");
 const ApiError = require("../utils/apiError");
 const { sanitizeUser } = require("../utils/userPresenter");
@@ -76,9 +77,43 @@ async function deleteProfile(userId) {
     throw new ApiError(403, "admin account cannot be deleted");
   }
 
-  const deletedUser = await Utilisateur.update(userId, { statut: "supprime" });
+  if (!pool) {
+    throw new ApiError(500, "DATABASE_URL is not configured");
+  }
 
-  return sanitizeUser(deletedUser);
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `
+        UPDATE tickets
+        SET
+          utilisateur_id = CASE WHEN utilisateur_id = $1 THEN NULL ELSE utilisateur_id END,
+          remis_par = CASE WHEN remis_par = $1 THEN NULL ELSE remis_par END
+        WHERE utilisateur_id = $1 OR remis_par = $1
+      `,
+      [userId]
+    );
+
+    const deleted = await client.query(
+      "DELETE FROM utilisateurs WHERE id_user = $1 RETURNING *",
+      [userId]
+    );
+
+    if (!deleted.rows[0]) {
+      throw new ApiError(404, "user not found");
+    }
+
+    await client.query("COMMIT");
+
+    return sanitizeUser(deleted.rows[0]);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 module.exports = {

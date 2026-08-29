@@ -322,7 +322,10 @@ describe("controllers", () => {
     profileService.getProfile.mockResolvedValue({ id_user: 7 });
     profileService.updateProfile.mockResolvedValue({ id_user: 7, nom: "Duck" });
     profileService.changePassword.mockResolvedValue();
-    profileService.deleteProfile.mockResolvedValue({ id_user: 7, statut: "supprime" });
+    profileService.deleteProfile.mockResolvedValue({
+      id_user: 7,
+      email: "client@example.com",
+    });
 
     await profileController.getMyProfile({ user: { id_user: 7 } }, res);
     expect(profileService.getProfile).toHaveBeenCalledWith(7);
@@ -352,7 +355,7 @@ describe("controllers", () => {
     expect(profileService.deleteProfile).toHaveBeenCalledWith(7);
     expect(res.json).toHaveBeenLastCalledWith({
       status: "success",
-      data: { user: { id_user: 7, statut: "supprime" } },
+      data: { user: { id_user: 7, email: "client@example.com" } },
     });
   });
 });
