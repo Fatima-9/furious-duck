@@ -35,6 +35,12 @@ services:
     volumes:
       - grafana_data_preprod:/var/lib/grafana
       - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      # Monte hors de /var/lib/grafana : ce chemin est deja occupe par le
+      # volume grafana_data_preprod, et imbriquer un bind mount dedans depend
+      # de l'ordre de montage de docker. Le chemin doit correspondre a
+      # options.path du provider.
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
     networks:
       - default
       - traefik_proxy
@@ -49,6 +55,28 @@ services:
       - "traefik.http.services.grafana-preprod.loadbalancer.server.port=3000"
     depends_on:
       - prometheus
+
+  # Calcule les quatre metriques DORA a partir de l'API Jenkins et les expose
+  # au format Prometheus. Jenkins tourne dans un projet compose separe : on le
+  # joint par son nom de conteneur sur le reseau partage traefik_proxy.
+  dora-exporter:
+    build: ./dora-exporter
+    container_name: furious_duck_dora_exporter_preprod
+    restart: unless-stopped
+    environment:
+      # Jenkins est servi derriere --prefix=/jenkins : le prefixe fait partie
+      # de l'URL de l'API, sans lui Jenkins repond 404.
+      - JENKINS_URL=${DORA_JENKINS_URL:-http://furious_duck_jenkins:8080/jenkins}
+      - JENKINS_JOB_PATH=${DORA_JENKINS_JOB_PATH:-job/furious-duck/job/PREPROD}
+      - JENKINS_USER=${DORA_JENKINS_USER:-}
+      - JENKINS_TOKEN=${DORA_JENKINS_TOKEN:-}
+      - DORA_WINDOW_DAYS=${DORA_WINDOW_DAYS:-30}
+    networks:
+      - default
+      - traefik_proxy
+    # Pas de label traefik : les metriques restent internes, Prometheus les
+    # scrape par le reseau docker.
+
 
 volumes:
   prometheus_data_preprod:
