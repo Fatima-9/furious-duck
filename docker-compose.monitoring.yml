@@ -108,10 +108,18 @@ services:
     devices:
       - /dev/kmsg:/dev/kmsg
     volumes:
-      - /:/rootfs:ro
+      # rslave est indispensable : un bind mount de / ne propage pas les
+      # sous-montages de l'hote. Sans lui, /rootfs/var/lib/docker apparait vide
+      # et cAdvisor echoue sur chaque conteneur avec
+      #   "failed to identify the read-write layer ID ... mount-id: no such file"
+      # Il ne remonte alors que le cgroup racine, sans label name, donc aucune
+      # metrique par conteneur.
+      - /:/rootfs:ro,rslave
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+      # Necessaire aux metriques d'I/O disque par conteneur.
+      - /dev/disk/:/dev/disk:ro
     networks:
       - default
 
