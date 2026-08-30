@@ -103,7 +103,21 @@ services:
       # consomme du CPU : on ne garde que ce qui sert aux dashboards.
       - "--docker_only=true"
       - "--housekeeping_interval=15s"
-      - "--disable_metrics=percpu,sched,tcp,udp,advtcp,process,hugetlb,referenced_memory,cpu_topology,resctrl"
+      #
+      # `disk` est desactive pour une raison precise, ne pas le retirer.
+      #
+      # Docker 29 utilise le magasin d'images containerd (Storage Driver:
+      # overlayfs). L'arborescence /var/lib/docker/image/<driver>/layerdb/mounts/
+      # n'existe plus : les couches vivent sous /var/lib/containerd/. Or cAdvisor
+      # cherche justement ce chemin pour identifier la couche read-write, et
+      # echoue a creer le collecteur de CHAQUE conteneur :
+      #   "failed to identify the read-write layer ID ... no such file or directory"
+      # Resultat : plus aucune metrique par conteneur, seulement le cgroup racine.
+      #
+      # Cette resolution ne sert qu'aux metriques container_fs_* (espace occupe
+      # par la couche read-write). En les desactivant, cAdvisor cree ses
+      # collecteurs normalement. Aucun dashboard n'utilise container_fs_*.
+      - "--disable_metrics=disk,percpu,sched,tcp,udp,advtcp,process,hugetlb,referenced_memory,cpu_topology,resctrl"
     privileged: true
     devices:
       - /dev/kmsg:/dev/kmsg
