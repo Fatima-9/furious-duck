@@ -1,16 +1,63 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    environment: preprod
 
 scrape_configs:
+  # --- Prometheus lui-meme -------------------------------------------------
   - job_name: "prometheus"
     metrics_path: /prometheus/metrics
     static_configs:
       - targets:
           - prometheus:9090
 
+  # --- Application ---------------------------------------------------------
+  # Le backend tourne avec --scale backend=2. Un static_configs sur "backend"
+  # ne scraperait qu'une seule replique a la fois (le DNS docker renvoie les
+  # deux IP en round-robin). dns_sd_configs resout l'enregistrement A et
+  # remonte une cible par replique, sinon la moitie des metriques est perdue.
   - job_name: furious-duck-backend-preprod
     metrics_path: /metrics
+    dns_sd_configs:
+      - names:
+          - backend
+        type: A
+        port: 5000
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # --- Metriques systeme de la VM (CPU, RAM, disque, reseau) ---------------
+  - job_name: node-exporter
     static_configs:
       - targets:
-          - backend:5000
+          - node-exporter:9100
+    relabel_configs:
+      - target_label: instance
+        replacement: vm-preprod
+
+  # --- Metriques par conteneur ---------------------------------------------
+  - job_name: cadvisor
+    static_configs:
+      - targets:
+          - cadvisor:8080
+    metric_relabel_configs:
+      # cAdvisor expose une serie par conteneur ET une serie agregee sans nom.
+      # On jette les series sans nom de conteneur, qui font doublon avec
+      # node-exporter et gonflent la base pour rien.
+      - source_labels: [name]
+        regex: ^$
+        action: drop
+
+  # --- Trafic HTTPS via Traefik --------------------------------------------
+  # Traefik appartient a un autre projet compose : on l'adresse par son nom de
+  # conteneur sur le reseau partage traefik_proxy. Le port 8082 n'est pas
+  # publie sur l'hote, il n'est joignable que depuis ce reseau.
+  - job_name: traefik
+    static_configs:
+      - targets:
+          - furious_duck_traefik:8082
+    relabel_configs:
+      - target_label: instance
+        replacement: traefik-preprod

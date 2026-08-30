@@ -12,6 +12,28 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      # Entrypoint interne dedie aux metriques. Il n'est pas publie dans
+      # ports: donc il reste inaccessible depuis l'exterieur ; seul Prometheus
+      # l'atteint via le reseau docker traefik_proxy.
+      - "--entrypoints.metrics.address=:8082"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entryPoint=metrics"
+      # Labels indispensables pour distinguer le trafic HTTPS (entrypoint
+      # websecure) du HTTP, et pour ventiler par service et par code retour.
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addRoutersLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      # Buckets de latence adaptes a une application web : la valeur par defaut
+      # de Traefik (0.1/0.3/1.2/5) est trop grossiere en dessous de 100 ms.
+      - "--metrics.prometheus.buckets=0.05,0.1,0.25,0.5,1,2.5,5,10"
+      # Journal des acces HTTPS, au format JSON pour etre exploitable.
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--accesslog.format=json"
+      # Le champ Authorization est retire : les logs ne doivent pas contenir
+      # de jetons ni d'identifiants.
+      - "--accesslog.fields.headers.names.Authorization=drop"
+      - "--accesslog.fields.headers.names.Cookie=drop"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--certificatesresolvers.letsencrypt.acme.email=thetiptop.gp2@gmail.com"
@@ -27,6 +49,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik_letsencrypt:/letsencrypt
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - traefik_logs:/var/log/traefik
 
     networks:
       - traefik_proxy
@@ -44,6 +67,7 @@ services:
 
 volumes:
   traefik_letsencrypt:
+  traefik_logs:
 
 networks:
   traefik_proxy:
