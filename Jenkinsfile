@@ -313,7 +313,13 @@ def deployEnvironment() {
     string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY'),
     string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY'),
     string(credentialsId: 'furious-duck-google-client-id', variable: 'VITE_GOOGLE_CLIENT_ID'),
-    string(credentialsId: 'furious-duck-facebook-app-id', variable: 'VITE_FACEBOOK_APP_ID')
+    string(credentialsId: 'furious-duck-facebook-app-id', variable: 'VITE_FACEBOOK_APP_ID'),
+    string(credentialsId: 'furious-duck-smtp-host', variable: 'SMTP_HOST'),
+    string(credentialsId: 'furious-duck-smtp-port', variable: 'SMTP_PORT'),
+    string(credentialsId: 'furious-duck-smtp-secure', variable: 'SMTP_SECURE'),
+    string(credentialsId: 'furious-duck-smtp-user', variable: 'SMTP_USER'),
+    string(credentialsId: 'furious-duck-smtp-pass', variable: 'SMTP_PASS'),
+    string(credentialsId: 'furious-duck-smtp-from', variable: 'SMTP_FROM')
   ]) {
     sh '''
       cat > backend/.env <<EOF
@@ -326,6 +332,12 @@ DEFAULT_USER_ROLE_ID=${DEFAULT_USER_ROLE_ID}
 DEFAULT_BOUTIQUE_ID=${DEFAULT_BOUTIQUE_ID}
 TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
 APP_URL=${APP_URL}
+SMTP_HOST=${SMTP_HOST}
+SMTP_PORT=${SMTP_PORT}
+SMTP_SECURE=${SMTP_SECURE}
+SMTP_USER=${SMTP_USER}
+SMTP_PASS=${SMTP_PASS}
+SMTP_FROM=${SMTP_FROM}
 EOF
 
       cat > frontend/.env <<EOF
