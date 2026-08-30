@@ -35,6 +35,12 @@ services:
     volumes:
       - grafana_data_preprod:/var/lib/grafana
       - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      # Monte hors de /var/lib/grafana : ce chemin est deja occupe par le
+      # volume grafana_data_preprod, et imbriquer un bind mount dedans depend
+      # de l'ordre de montage de docker. Le chemin doit correspondre a
+      # options.path du provider.
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
     networks:
       - default
       - traefik_proxy
@@ -49,6 +55,55 @@ services:
       - "traefik.http.services.grafana-preprod.loadbalancer.server.port=3000"
     depends_on:
       - prometheus
+
+  # Metriques systeme de la VM hote : CPU, RAM, disque, reseau, charge.
+  # Les points de montage /proc, /sys et / sont montes en lecture seule car
+  # node-exporter lit les compteurs du noyau, pas ceux du conteneur.
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: furious_duck_node_exporter_preprod
+    restart: unless-stopped
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/host/root"
+      # Sans ce filtre, chaque couche overlay docker apparait comme un systeme
+      # de fichiers distinct et pollue les metriques disque.
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|rootfs/var/lib/docker)($$|/)"
+      - "--collector.netdev.device-exclude=^(veth|docker|br-|lo).*$$"
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro,rslave
+    networks:
+      - default
+    # Pas de label traefik : ces metriques ne doivent pas etre exposees
+    # publiquement, Prometheus les scrape via le reseau interne.
+
+  # Metriques par conteneur : CPU, memoire, reseau et I/O de chaque service.
+  # Complete node-exporter, qui ne voit que la machine dans son ensemble.
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: furious_duck_cadvisor_preprod
+    restart: unless-stopped
+    command:
+      # cAdvisor collecte par defaut beaucoup de metriques inutiles ici et
+      # consomme du CPU : on ne garde que ce qui sert aux dashboards.
+      - "--docker_only=true"
+      - "--housekeeping_interval=15s"
+      - "--disable_metrics=percpu,sched,tcp,udp,advtcp,process,hugetlb,referenced_memory,cpu_topology,resctrl"
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - default
+
 
 volumes:
   prometheus_data_preprod:

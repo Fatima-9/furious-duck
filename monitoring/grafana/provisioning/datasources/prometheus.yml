@@ -4,5 +4,13 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
+    # uid fixe : les dashboards versionnes referencent cette valeur. Sans uid
+    # explicite Grafana en genere un aleatoire au premier demarrage, et les
+    # dashboards provisionnes pointeraient vers une source introuvable.
+    uid: prometheus
     url: http://prometheus:9090/prometheus
     isDefault: true
+    jsonData:
+      # Doit rester >= au scrape_interval de Prometheus, sinon Grafana affiche
+      # des trous dans les courbes.
+      timeInterval: 15s
