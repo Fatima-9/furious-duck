@@ -51,7 +51,16 @@ pipeline {
             env.COMPOSE_PROJECT_NAME = 'furious-duck-dev-live'
           }
 
+          // Chemin du job dans l'API Jenkins, pour l'exporter DORA.
+          // JOB_NAME vaut "furious-duck/PREPROD" sur un pipeline multibranche,
+          // alors que l'API attend "job/furious-duck/job/PREPROD".
+          env.DORA_JENKINS_JOB_PATH = env.JOB_NAME
+            .split('/')
+            .collect { "job/${it}" }
+            .join('/')
+
           echo "Branch: ${branch}"
+          echo "Chemin API du job: ${env.DORA_JENKINS_JOB_PATH}"
           echo "Deploy environment: ${env.DEPLOY_ENV}"
           echo "Coverage threshold: ${env.COVERAGE_MIN}%"
         }
@@ -66,6 +75,10 @@ pipeline {
 
         dir('frontend') {
           sh 'npm ci'
+        }
+
+        dir('dora-exporter') {
+          sh 'npm install'
         }
       }
     }
@@ -126,6 +139,19 @@ EOF
       post {
         always {
           archiveArtifacts artifacts: 'frontend/coverage/**', allowEmptyArchive: true
+        }
+      }
+    }
+
+    stage('DORA Exporter Tests') {
+      steps {
+        dir('dora-exporter') {
+          sh 'npm test -- --coverage'
+        }
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'dora-exporter/coverage/**', allowEmptyArchive: true
         }
       }
     }
@@ -319,7 +345,11 @@ def deployEnvironment() {
     string(credentialsId: 'furious-duck-smtp-secure', variable: 'SMTP_SECURE'),
     string(credentialsId: 'furious-duck-smtp-user', variable: 'SMTP_USER'),
     string(credentialsId: 'furious-duck-smtp-pass', variable: 'SMTP_PASS'),
-    string(credentialsId: 'furious-duck-smtp-from', variable: 'SMTP_FROM')
+    string(credentialsId: 'furious-duck-smtp-from', variable: 'SMTP_FROM'),
+    // Compte de service en lecture seule sur Jenkins, utilise par
+    // l'exporter DORA pour lire l'historique de builds.
+    string(credentialsId: 'furious-duck-jenkins-api-user', variable: 'DORA_JENKINS_USER'),
+    string(credentialsId: 'furious-duck-jenkins-api-token', variable: 'DORA_JENKINS_TOKEN')
   ]) {
     sh '''
       cat > backend/.env <<EOF

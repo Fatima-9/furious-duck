@@ -8,6 +8,9 @@ frontend/node_modules
 backend/coverage/
 frontend/coverage/
 
+dora-exporter/node_modules
+dora-exporter/coverage/
+
 .DS_Store
 Thumbs.db
 
