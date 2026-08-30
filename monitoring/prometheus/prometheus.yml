@@ -42,13 +42,15 @@ scrape_configs:
     static_configs:
       - targets:
           - cadvisor:8080
-    metric_relabel_configs:
-      # cAdvisor expose une serie par conteneur ET une serie agregee sans nom.
-      # On jette les series sans nom de conteneur, qui font doublon avec
-      # node-exporter et gonflent la base pour rien.
-      - source_labels: [name]
-        regex: ^$
-        action: drop
+    # Aucun metric_relabel_configs ici, volontairement.
+    #
+    # Une regle filtrant les series sans label `name` a ete essayee pour ecarter
+    # les agregats, et elle a supprime la TOTALITE des metriques : en relabeling
+    # Prometheus un label absent vaut chaine vide, donc la regexp ^$ correspond
+    # et la serie est jetee. Aucune serie de ce cAdvisor ne porte `name`, d'ou
+    # 589 echantillons collectes et 0 conserves.
+    #
+    # Le gain etait cosmetique, le risque non : on garde tout.
 
   # --- Trafic HTTPS via Traefik --------------------------------------------
   # Traefik appartient a un autre projet compose : on l'adresse par son nom de
