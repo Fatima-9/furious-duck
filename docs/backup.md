@@ -58,6 +58,15 @@ Les noms de volumes Docker sont préfixés par le nom du projet Compose
 l'environnement, donc le script **découvre les volumes par suffixe** au lieu de
 les coder en dur.
 
+**Attention au piège :** plusieurs environnements coexistent sur cette VM et
+produisent des volumes de même suffixe — `furious-duck-dev-live_grafana_data_preprod`
+et `furious-duck-preprod-live_grafana_data_preprod`. Une première version du
+script prenait le premier venu et sauvegardait donc les données d'un
+environnement mort. La variable `COMPOSE_PROJECT` désigne désormais
+explicitement le projet à sauvegarder ; en l'absence de correspondance (cas
+normal de Jenkins et Traefik, qui ont leur propre projet), le script se rabat
+sur l'unique candidat et journalise un avertissement s'il y en a plusieurs.
+
 L'archive contient un `MANIFEST.txt` (inventaire + compteurs) et un
 `DEPLOYED_COMMIT.txt` (SHA et branche déployés), pour savoir à quel état du code
 correspond la sauvegarde.
@@ -151,4 +160,5 @@ Adaptez le nom du volume et de l'archive (`jenkins.tar.gz`, `prometheus.tar.gz`,
 | `RETENTION_DAYS` | `14` | Jours de rétention |
 | `ENV_FILE` | `.../furious-duck/backend/.env` | Fichier contenant `DATABASE_URL` |
 | `PROJECT_DIR` | `/home/thetiptop_gp2/furious-duck` | Dépôt déployé sur la VM |
+| `COMPOSE_PROJECT` | `furious-duck-preprod-live` | Projet Compose dont on sauvegarde les volumes |
 | `PG_IMAGE` | `postgres:18-alpine` | Image du client PostgreSQL |

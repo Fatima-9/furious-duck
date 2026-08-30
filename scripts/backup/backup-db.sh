@@ -41,32 +41,53 @@ if [ -z "${DATABASE_URL:-}" ]; then
 fi
 [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL est vide"
 
-DUMP_FILE="${DEST_DIR}/neondb_${TIMESTAMP}.dump"
+DUMP_NAME="neondb_${TIMESTAMP}.dump"
+DUMP_FILE="${DEST_DIR}/${DUMP_NAME}"
 
-log "Dump en cours vers $(basename "$DUMP_FILE")"
+log "Dump en cours vers ${DUMP_NAME}"
 
+# Le repertoire de destination est MONTE dans le conteneur et pg_dump y ecrit
+# lui-meme via --file, plutot que de rediriger sa sortie standard.
+#
+# C'est indispensable pour la verification qui suit : pg_restore a besoin d'un
+# fichier positionnable pour relire une archive au format custom. Passer
+# l'archive par le stdin d'un conteneur echoue avec
+#   "pg_restore: error: did not find magic string in file header"
+# alors meme que le dump est complet et valide.
+#
+# --user : sans cela le fichier appartiendrait a root, et l'utilisateur du cron
+# ne pourrait pas le compresser ensuite.
+#
 # --format=custom : archive compressee et surtout restaurable selectivement
 #   (une seule table, sans les donnees, etc.) via pg_restore.
 # --no-owner / --no-privileges : le role neondb_owner n'existera pas forcement
 #   sur la cible de restauration, on evite des erreurs inutiles au restore.
-if ! docker run --rm -i \
-  -e PGCONNECT_TIMEOUT=30 \
-  "$PG_IMAGE" \
-  pg_dump "$DATABASE_URL" \
-    --format=custom \
-    --no-owner \
-    --no-privileges \
-    --verbose \
-  > "$DUMP_FILE" 2>>"$LOG_FILE"
+DOCKER_RUN=(
+  docker run --rm
+  --user "$(id -u):$(id -g)"
+  -v "${DEST_DIR}:/backup"
+  -e PGCONNECT_TIMEOUT=30
+  "$PG_IMAGE"
+)
+
+if ! "${DOCKER_RUN[@]}" pg_dump "$DATABASE_URL" \
+  --format=custom \
+  --no-owner \
+  --no-privileges \
+  --verbose \
+  --file="/backup/${DUMP_NAME}" 2>>"$LOG_FILE"
 then
   rm -f "$DUMP_FILE"
   fail "pg_dump a echoue (voir $LOG_FILE)"
 fi
 
-# Un pg_dump qui echoue apres avoir ouvert le flux peut laisser un fichier
-# tronque mais non vide : on valide l'archive en la relisant.
-if ! docker run --rm -i "$PG_IMAGE" pg_restore --list /dev/stdin \
-  < "$DUMP_FILE" >/dev/null 2>>"$LOG_FILE"
+# Un pg_dump interrompu peut laisser un fichier tronque mais non vide : on
+# valide l'archive en la relisant depuis le repertoire monte.
+if ! docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "${DEST_DIR}:/backup:ro" \
+  "$PG_IMAGE" \
+  pg_restore --list "/backup/${DUMP_NAME}" >/dev/null 2>>"$LOG_FILE"
 then
   rm -f "$DUMP_FILE"
   fail "l'archive produite est illisible par pg_restore, sauvegarde rejetee"

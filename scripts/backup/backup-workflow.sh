@@ -15,7 +15,9 @@
 # Les noms de volumes docker sont prefixes par le nom du projet compose
 # (furious-duck-preprod-live_prometheus_data_preprod, etc.). Comme ce prefixe
 # varie selon l'environnement, on decouvre les volumes par suffixe au lieu de
-# les coder en dur.
+# les coder en dur. Plusieurs environnements coexistant sur la VM produisent
+# toutefois le meme suffixe : COMPOSE_PROJECT departage et designe celui qui est
+# reellement deploye.
 #
 # Usage :
 #   ./backup-workflow.sh
@@ -24,6 +26,7 @@
 #   BACKUP_ROOT     racine des sauvegardes  (defaut /home/thetiptop_gp2/backups)
 #   RETENTION_DAYS  jours de retention      (defaut 14)
 #   PROJECT_DIR     repo deploye sur la VM  (defaut /home/thetiptop_gp2/furious-duck)
+#   COMPOSE_PROJECT projet compose deploye  (defaut furious-duck-preprod-live)
 
 set -euo pipefail
 
@@ -33,6 +36,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/backup-common.sh"
 
 PROJECT_DIR="${PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}"
+
+# Projet compose reellement deploye. Sert a departager les volumes de meme
+# suffixe appartenant a plusieurs environnements sur la meme VM.
+COMPOSE_PROJECT="${COMPOSE_PROJECT:-furious-duck-preprod-live}"
 DEST_DIR="${BACKUP_ROOT}/workflow"
 STAGING_DIR="${DEST_DIR}/.staging_${TIMESTAMP}"
 
@@ -47,11 +54,10 @@ trap cleanup EXIT
 
 mkdir -p "$STAGING_DIR"
 
-# Retrouve le nom complet d'un volume docker a partir de son suffixe.
-# Renvoie une chaine vide si aucun volume ne correspond.
-find_volume() {
-  local suffix="$1"
-  docker volume ls --format '{{.Name}}' | grep -E "(^|_)${suffix}$" | head -n1
+# Liste TOUS les volumes docker dont le nom se termine par le suffixe donne.
+# Ne journalise rien : la sortie est capturee par l'appelant.
+list_volumes() {
+  docker volume ls --format '{{.Name}}' | grep -E "(^|_)${1}$" || true
 }
 
 # Archive un volume docker vers le staging, via un conteneur alpine jetable
@@ -59,13 +65,31 @@ find_volume() {
 backup_volume() {
   local suffix="$1"
   local label="$2"
-  local volume
-  volume="$(find_volume "$suffix")"
+  local matches count volume
 
-  if [ -z "$volume" ]; then
+  matches="$(list_volumes "$suffix")"
+  count="$(printf '%s' "$matches" | grep -c . || true)"
+
+  if [ "$count" -eq 0 ]; then
     log "ATTENTION: aucun volume trouve pour '${suffix}' (${label}) - ignore"
     VOLUMES_MISSING=$((VOLUMES_MISSING + 1))
     return 0
+  fi
+
+  # Plusieurs projets compose coexistent sur cette VM et creent des volumes de
+  # meme suffixe : furious-duck-dev-live_prometheus_data_preprod et
+  # furious-duck-preprod-live_prometheus_data_preprod. Prendre le premier venu
+  # revenait a sauvegarder les donnees d'un environnement mort au lieu de
+  # celles reellement en production. On privilegie donc explicitement le projet
+  # deploye.
+  volume="$(printf '%s\n' "$matches" | grep -E "^${COMPOSE_PROJECT}_" | head -n1 || true)"
+
+  if [ -z "$volume" ]; then
+    # Jenkins et Traefik vivent dans leur propre projet : c'est le cas normal.
+    volume="$(printf '%s\n' "$matches" | head -n1)"
+    if [ "$count" -gt 1 ]; then
+      log "ATTENTION: ${count} volumes correspondent a '${suffix}', aucun du projet ${COMPOSE_PROJECT} ; choix de ${volume}"
+    fi
   fi
 
   log "Archivage du volume ${volume} (${label})"
@@ -111,6 +135,7 @@ if [ -d "$PROJECT_DIR" ]; then
     Jenkinsfile \
     monitoring \
     scripts \
+    traefik \
     2>>"$LOG_FILE" || log "ATTENTION: archivage config partiel (fichiers absents ?)"
 
   # Le SHA deploye permet de savoir a quel commit correspond la sauvegarde.

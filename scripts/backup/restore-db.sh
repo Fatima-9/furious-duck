@@ -46,18 +46,27 @@ fi
 
 require_docker
 
-# Decompression dans un fichier temporaire : pg_restore a besoin d'un fichier
-# navigable, il ne sait pas travailler sur un flux compresse.
-TMP_DUMP="$(mktemp)"
-cleanup() { rm -f "$TMP_DUMP"; }
+# Decompression dans un repertoire temporaire, qui sera MONTE dans le conteneur.
+#
+# pg_restore a besoin d'un fichier positionnable pour lire une archive au format
+# custom. Le stdin d'un conteneur ne l'est pas : passer l'archive par un pipe
+# echoue avec "did not find magic string in file header" meme sur un dump
+# parfaitement valide. D'ou le montage plutot que la redirection.
+TMP_DIR="$(mktemp -d)"
+TMP_NAME="restore.dump"
+cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
 echo "Decompression de $(basename "$ARCHIVE")..."
-gunzip -c "$ARCHIVE" > "$TMP_DUMP"
+gunzip -c "$ARCHIVE" > "${TMP_DIR}/${TMP_NAME}"
 
 if [ "$MODE" = "list" ]; then
   echo "Contenu de l'archive :"
-  docker run --rm -i "$PG_IMAGE" pg_restore --list /dev/stdin < "$TMP_DUMP"
+  docker run --rm \
+    --user "$(id -u):$(id -g)" \
+    -v "${TMP_DIR}:/backup:ro" \
+    "$PG_IMAGE" \
+    pg_restore --list "/backup/${TMP_NAME}"
   exit 0
 fi
 
@@ -82,12 +91,15 @@ echo "Restauration en cours..."
 # --no-owner : le role d'origine n'existe pas forcement sur la cible.
 # On ne met pas -e : pg_restore remonte des avertissements benins (objets
 # absents lors du --clean initial) qu'on ne veut pas traiter comme fatals.
-docker run --rm -i "$PG_IMAGE" \
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "${TMP_DIR}:/backup:ro" \
+  "$PG_IMAGE" \
   pg_restore \
     --dbname="$TARGET_URL" \
     --clean --if-exists \
     --no-owner --no-privileges \
     --verbose \
-    /dev/stdin < "$TMP_DUMP" \
+    "/backup/${TMP_NAME}" \
   && echo "Restauration terminee." \
   || echo "Restauration terminee avec des avertissements (verifiez la sortie ci-dessus)."
