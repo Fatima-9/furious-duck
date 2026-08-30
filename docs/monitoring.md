@@ -57,11 +57,46 @@ dans `ports:`. Il n'est joignable que depuis le réseau `traefik_proxy`, où
 Prometheus est également connecté. Les en-têtes `Authorization` et `Cookie`
 sont retirés des access logs pour ne pas y écrire de jetons.
 
-**Le chemin du fichier `prometheus.yml` est absolu** dans
-`docker-compose.monitoring.yml`
-(`/home/thetiptop_gp2/furious-duck/monitoring/prometheus/prometheus.yml`). La
-pile monitoring ne démarre donc correctement que sur la VM, à cet emplacement
-exact. En local, remplacez ce chemin par `./monitoring/prometheus/prometheus.yml`.
+## Les montages de configuration sont en chemin ABSOLU — c'est délibéré
+
+Tous les fichiers de configuration (Prometheus, datasource et dashboards
+Grafana) sont montés depuis `${VM_PROJECT_DIR}`, par défaut
+`/home/thetiptop_gp2/furious-duck`, et **jamais** en relatif.
+
+La raison : Jenkins lance `docker compose` depuis
+`/var/jenkins_home/workspace/furious-duck-pipeline`, un chemin qui n'existe
+qu'**à l'intérieur** du conteneur Jenkins. Or le démon Docker tourne sur
+l'hôte, et c'est lui qui résout les chemins des bind mounts. Un montage
+relatif `./monitoring/...` pointe donc vers un chemin inexistant sur l'hôte :
+Docker crée silencieusement un dossier vide, sans la moindre erreur, et
+Grafana démarre **sans aucun dashboard**.
+
+**Conséquence opérationnelle : le dépôt de la VM doit être à jour.** Jenkins
+déploie depuis son propre workspace, mais les fichiers de configuration sont
+lus depuis `/home/thetiptop_gp2/furious-duck`. Après chaque merge touchant
+`monitoring/`, il faut donc :
+
+```bash
+cd /home/thetiptop_gp2/furious-duck
+git pull
+docker restart furious_duck_prometheus_preprod furious_duck_grafana_preprod
+```
+
+Prometheus et Grafana ne relisent leur configuration qu'au démarrage : sans le
+`docker restart`, un `git pull` seul ne change rien.
+
+En local, surchargez la variable : `VM_PROJECT_DIR=$(pwd) docker compose ...`
+
+## Le mot de passe Grafana vient d'un credential Jenkins
+
+`GF_SECURITY_ADMIN_PASSWORD` est alimenté par le credential
+`furious-duck-grafana-admin-password`. Grafana **réapplique cette valeur à
+chaque démarrage** : quand elle était en dur dans le dépôt, chaque déploiement
+écrasait le mot de passe réel de l'équipe.
+
+La variable est déclarée avec `${GRAFANA_ADMIN_PASSWORD:?...}` : si le
+credential manque, `docker compose` échoue immédiatement avec un message
+explicite, au lieu de démarrer avec un mot de passe par défaut.
 
 ## Lancer la pile
 
@@ -103,9 +138,8 @@ En local :
 - Prometheus : http://localhost:9090
 - Grafana : http://localhost:3001 (`admin` / `admin`)
 
-> Les identifiants Grafana sont `admin` / `admin` en dur dans
-> `docker-compose.monitoring.yml`. À changer avant toute mise en production
-> réelle, via `GF_SECURITY_ADMIN_PASSWORD`.
+> Le mot de passe Grafana provient du credential Jenkins
+> `furious-duck-grafana-admin-password`, plus du dépôt.
 
 ## Vérifier que la collecte fonctionne
 

@@ -8,7 +8,7 @@ services:
       - "--web.external-url=https://preprod.dsp5-archi-o24a-g2.fr/prometheus"
       - "--web.route-prefix=/prometheus"
     volumes:
-      - /home/thetiptop_gp2/furious-duck/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${VM_PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data_preprod:/prometheus
     networks:
       - default
@@ -28,19 +28,30 @@ services:
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      # Injecte par Jenkins depuis le credential furious-duck-grafana-admin-password.
+      # Grafana reapplique cette valeur a chaque demarrage : la laisser en dur
+      # dans le depot ecrasait le mot de passe reel a chaque deploiement.
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD est requis}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=https://preprod.dsp5-archi-o24a-g2.fr/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
     volumes:
       - grafana_data_preprod:/var/lib/grafana
-      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      # Monte hors de /var/lib/grafana : ce chemin est deja occupe par le
-      # volume grafana_data_preprod, et imbriquer un bind mount dedans depend
-      # de l'ordre de montage de docker. Le chemin doit correspondre a
-      # options.path du provider.
-      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      # Chemins ABSOLUS sur l'hote, et non relatifs.
+      #
+      # Jenkins lance docker compose depuis /var/jenkins_home/workspace/... qui
+      # n'existe que DANS le conteneur Jenkins, alors que le demon docker tourne
+      # sur l'hote. Un montage relatif ./monitoring/... est donc resolu sur
+      # l'hote, ou ce chemin n'existe pas : docker cree un dossier vide sans
+      # erreur, et Grafana demarre sans aucun dashboard.
+      #
+      # Consequence : le depot de la VM doit etre a jour (git pull) pour que les
+      # dashboards et la configuration Prometheus soient ceux du commit deploye.
+      - ${VM_PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ${VM_PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      # Monte hors de /var/lib/grafana : ce chemin est deja occupe par le volume
+      # grafana_data_preprod. Doit correspondre a options.path du provider.
+      - ${VM_PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}/monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
     networks:
       - default
       - traefik_proxy

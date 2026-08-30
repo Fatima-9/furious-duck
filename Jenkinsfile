@@ -349,7 +349,10 @@ def deployEnvironment() {
     // Compte de service en lecture seule sur Jenkins, utilise par
     // l'exporter DORA pour lire l'historique de builds.
     string(credentialsId: 'furious-duck-jenkins-api-user', variable: 'DORA_JENKINS_USER'),
-    string(credentialsId: 'furious-duck-jenkins-api-token', variable: 'DORA_JENKINS_TOKEN')
+    string(credentialsId: 'furious-duck-jenkins-api-token', variable: 'DORA_JENKINS_TOKEN'),
+    // Mot de passe admin Grafana. Grafana le reapplique a chaque demarrage :
+    // sans ce credential, chaque deploiement ecraserait le mot de passe reel.
+    string(credentialsId: 'furious-duck-grafana-admin-password', variable: 'GRAFANA_ADMIN_PASSWORD')
   ]) {
     sh '''
       cat > backend/.env <<EOF
