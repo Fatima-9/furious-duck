@@ -1,0 +1,25 @@
+# Taches planifiees de sauvegarde - projet Furious Duck (VM preprod)
+#
+# Installation :
+#   sudo cp furious-duck-backup.cron /etc/cron.d/furious-duck-backup
+#   sudo chown root:root /etc/cron.d/furious-duck-backup
+#   sudo chmod 644 /etc/cron.d/furious-duck-backup
+#
+# Ou automatiquement :  sudo ./install-cron.sh
+#
+# Un fichier dans /etc/cron.d/ doit indiquer l'utilisateur en 6e colonne
+# (contrairement a un crontab utilisateur) et se terminer par une ligne vide.
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=""
+
+# Sauvegarde de la base de donnees - toutes les nuits a 02h30.
+# Heure creuse : peu de trafic, et le dump Neon ne genera personne.
+30 2 * * * thetiptop_gp2 /home/thetiptop_gp2/furious-duck/scripts/backup/backup-db.sh >> /home/thetiptop_gp2/backups/cron.log 2>&1
+
+# Sauvegarde complete du workflow (Jenkins, Prometheus, Grafana, Traefik)
+# - toutes les nuits a 03h30, apres la sauvegarde base pour ne pas faire
+# tourner deux gros tar en meme temps.
+30 3 * * * thetiptop_gp2 /home/thetiptop_gp2/furious-duck/scripts/backup/backup-workflow.sh >> /home/thetiptop_gp2/backups/cron.log 2>&1
+

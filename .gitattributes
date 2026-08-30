@@ -1,0 +1,8 @@
+# core.autocrlf=true sur les postes Windows convertit les fins de ligne en CRLF.
+# Les scripts shell et les fichiers cron doivent rester en LF : sous Linux, un
+# CRLF donne "bad interpreter: /bin/bash^M" et cron ignore une ligne mal formee.
+*.sh    text eol=lf
+*.cron  text eol=lf
+Dockerfile*  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
