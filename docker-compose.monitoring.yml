@@ -92,52 +92,6 @@ services:
     # Pas de label traefik : ces metriques ne doivent pas etre exposees
     # publiquement, Prometheus les scrape via le reseau interne.
 
-  # Metriques par conteneur : CPU, memoire, reseau et I/O de chaque service.
-  # Complete node-exporter, qui ne voit que la machine dans son ensemble.
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
-    container_name: furious_duck_cadvisor_preprod
-    restart: unless-stopped
-    command:
-      # cAdvisor collecte par defaut beaucoup de metriques inutiles ici et
-      # consomme du CPU : on ne garde que ce qui sert aux dashboards.
-      - "--docker_only=true"
-      - "--housekeeping_interval=15s"
-      #
-      # `disk` est desactive pour une raison precise, ne pas le retirer.
-      #
-      # Docker 29 utilise le magasin d'images containerd (Storage Driver:
-      # overlayfs). L'arborescence /var/lib/docker/image/<driver>/layerdb/mounts/
-      # n'existe plus : les couches vivent sous /var/lib/containerd/. Or cAdvisor
-      # cherche justement ce chemin pour identifier la couche read-write, et
-      # echoue a creer le collecteur de CHAQUE conteneur :
-      #   "failed to identify the read-write layer ID ... no such file or directory"
-      # Resultat : plus aucune metrique par conteneur, seulement le cgroup racine.
-      #
-      # Cette resolution ne sert qu'aux metriques container_fs_* (espace occupe
-      # par la couche read-write). En les desactivant, cAdvisor cree ses
-      # collecteurs normalement. Aucun dashboard n'utilise container_fs_*.
-      - "--disable_metrics=disk,percpu,sched,tcp,udp,advtcp,process,hugetlb,referenced_memory,cpu_topology,resctrl"
-    privileged: true
-    devices:
-      - /dev/kmsg:/dev/kmsg
-    volumes:
-      # rslave est indispensable : un bind mount de / ne propage pas les
-      # sous-montages de l'hote. Sans lui, /rootfs/var/lib/docker apparait vide
-      # et cAdvisor echoue sur chaque conteneur avec
-      #   "failed to identify the read-write layer ID ... mount-id: no such file"
-      # Il ne remonte alors que le cgroup racine, sans label name, donc aucune
-      # metrique par conteneur.
-      - /:/rootfs:ro,rslave
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      # Necessaire aux metriques d'I/O disque par conteneur.
-      - /dev/disk/:/dev/disk:ro
-    networks:
-      - default
-
-
   # Calcule les quatre metriques DORA a partir de l'API Jenkins et les expose
   # au format Prometheus. Jenkins tourne dans un projet compose separe : on le
   # joint par son nom de conteneur sur le reseau partage traefik_proxy.

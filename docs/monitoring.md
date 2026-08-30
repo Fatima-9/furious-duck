@@ -6,28 +6,55 @@
 |---|---|---|
 | Backend Node | `backend:5000/metrics` | Requêtes HTTP applicatives, durées, métriques Node (heap, event loop, GC) |
 | **node-exporter** | `node-exporter:9100` | CPU, RAM, disque, réseau, charge de la **VM hôte** |
-| **cAdvisor** | `cadvisor:8080` | CPU, mémoire, réseau et I/O **par conteneur** |
 | **Traefik** | `furious_duck_traefik:8082` | Trafic **HTTPS** : débit, codes de retour, latence, certificats TLS |
 | Prometheus | `prometheus:9090` | Auto-supervision |
 
-node-exporter et cAdvisor sont complémentaires : le premier voit la machine
-dans son ensemble, le second attribue la consommation à un conteneur précis.
-Sans cAdvisor, un pic CPU sur la VM ne dit pas *qui* le provoque.
+node-exporter n'a pas de label Traefik : il n'est **pas exposé publiquement**,
+Prometheus l'atteint uniquement par le réseau Docker interne.
 
-Aucun des deux exporters n'a de label Traefik : ils ne sont **pas exposés
-publiquement**, Prometheus les atteint uniquement par le réseau Docker interne.
+## Pourquoi il n'y a pas de métriques par conteneur
+
+cAdvisor a été mis en place puis retiré. Cette VM tourne sous **Docker 29.7.2
+avec le magasin d'images containerd** (`Storage Driver: overlayfs`). Dans cette
+configuration, l'arborescence `/var/lib/docker/image/<driver>/layerdb/mounts/`
+n'existe plus — les couches vivent sous
+`/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/`.
+
+Or cAdvisor v0.49.1 cherche ce chemin pour identifier la couche read-write **à
+la création du collecteur de chaque conteneur**, avant même de savoir quelles
+métriques sont demandées. Il échoue donc systématiquement :
+
+```
+failed to identify the read-write layer ID for container "<id>"
+  - open /rootfs/var/lib/docker/image/overlayfs/layerdb/mounts/<id>/mount-id:
+    no such file or directory
+```
+
+Résultat : une seule série remontée, celle du cgroup racine, sans label `name`.
+
+Trois pistes ont été essayées et écartées : propagation `rslave` sur `/rootfs`
+(le fichier n'existe nulle part, ce n'est pas un problème de visibilité),
+montage de `/dev/disk`, et `--disable_metrics=disk` (la résolution est faite
+avant la prise en compte du flag). C'est une incompatibilité de cAdvisor avec
+le magasin containerd, pas une erreur de configuration.
+
+Les métriques système demandées — CPU, RAM, disque, réseau — restent
+entièrement couvertes par node-exporter. Pour obtenir en plus la ventilation
+par conteneur, il faudrait un exporter interrogeant l'API Docker plutôt que le
+système de fichiers.
 
 ## Dashboards
 
-Deux dashboards sont versionnés dans `monitoring/grafana/dashboards/` et
+Trois dashboards sont versionnés dans `monitoring/grafana/dashboards/` et
 provisionnés automatiquement au démarrage de Grafana, dans le dossier
-**Furious Duck**.
+**Furious Duck**. Le troisième, *Métriques DORA*, est décrit dans
+[dora.md](dora.md).
 
-### Système et conteneurs (`fd-system-overview`)
+### Système (`fd-system-overview`)
 
-CPU, mémoire, disque, réseau de la VM, puis les mêmes métriques ventilées par
-conteneur. Comprend un panneau « Redémarrages de conteneurs » qui rend visible
-un service qui boucle sur `restart: unless-stopped`.
+CPU par mode, charge moyenne, mémoire et swap, espace et débit disque, trafic
+et erreurs réseau de la VM. Le panneau « Débit disque » montre les pics
+nocturnes de 02h30 et 03h30 : ce sont les sauvegardes automatiques.
 
 ### Trafic HTTPS (`fd-traefik-https`)
 
