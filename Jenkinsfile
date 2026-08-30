@@ -162,13 +162,17 @@ EOF
     stage('Frontend Build') {
       steps {
         withCredentials([
-          string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY')
+          string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY'),
+          string(credentialsId: 'furious-duck-google-client-id', variable: 'VITE_GOOGLE_CLIENT_ID'),
+          string(credentialsId: 'furious-duck-facebook-app-id', variable: 'VITE_FACEBOOK_APP_ID')
         ]) {
           dir('frontend') {
             sh '''
               cat > .env <<EOF
 VITE_API_URL=
 VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY}
+VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+VITE_FACEBOOK_APP_ID=${VITE_FACEBOOK_APP_ID}
 EOF
 
               npm run build
@@ -206,7 +210,10 @@ EOF
         withCredentials([
           string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
           string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET'),
-          string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY')
+          string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY'),
+          string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY'),
+          string(credentialsId: 'furious-duck-google-client-id', variable: 'VITE_GOOGLE_CLIENT_ID'),
+          string(credentialsId: 'furious-duck-facebook-app-id', variable: 'VITE_FACEBOOK_APP_ID')
         ]) {
           sh '''
             cat > backend/.env <<EOF
@@ -222,6 +229,9 @@ EOF
 
             cat > frontend/.env <<EOF
 VITE_API_URL=
+VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY}
+VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+VITE_FACEBOOK_APP_ID=${VITE_FACEBOOK_APP_ID}
 EOF
 
             docker compose -p "${CI_COMPOSE_PROJECT_NAME}" -f docker-compose.yml -f docker-compose.ci.yml up -d --build
@@ -301,7 +311,9 @@ def deployEnvironment() {
     string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
     string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET'),
     string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY'),
-    string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY')
+    string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY'),
+    string(credentialsId: 'furious-duck-google-client-id', variable: 'VITE_GOOGLE_CLIENT_ID'),
+    string(credentialsId: 'furious-duck-facebook-app-id', variable: 'VITE_FACEBOOK_APP_ID')
   ]) {
     sh '''
       cat > backend/.env <<EOF
@@ -319,6 +331,8 @@ EOF
       cat > frontend/.env <<EOF
 VITE_API_URL=
 VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY}
+VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+VITE_FACEBOOK_APP_ID=${VITE_FACEBOOK_APP_ID}
 EOF
 
       docker compose -p "${COMPOSE_PROJECT_NAME}" \
