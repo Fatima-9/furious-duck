@@ -5,6 +5,11 @@ import Card from '../components/ui/Card';
 import ContestCountdown from '../components/contest/ContestCountdown';
 import DecorativeWheel from '../components/wheel/DecorativeWheel';
 import { trackParticipationClick } from '../utils/analytics';
+import coffretDecouverteImage from '../assets/products/coffret-decouverte.webp';
+import boiteSignatureImage from '../assets/products/boite-signature.webp';
+import theDouxImage from '../assets/products/the-doux.webp';
+import infuseurTheImage from '../assets/products/infuseur-the.webp';
+import unAnDeTheImage from '../assets/products/un-an-de-the.webp';
 
 const STEPS = [
   {
@@ -54,56 +59,32 @@ const LOTS = [
     tagColor: 'var(--muted)',
     title: 'Infuseur à thé',
     sub: 'Cadeau de bienvenue',
-    bg: 'linear-gradient(135deg,#EEF0EA,#E3E6DA)',
-    color: 'var(--green)',
-    icon: (
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-        <path d="M12 3c-3 5-6 6-6 10a6 6 0 0012 0c0-4-3-5-6-10z" />
-      </svg>
-    ),
+    image: infuseurTheImage,
+    imageAlt: 'Infuseur à thé en acier accompagné de feuilles de thé',
   },
   {
     tag: 'Standard',
     tagColor: 'var(--muted)',
     title: 'Thé détox',
     sub: 'Valeur 39 €',
-    bg: 'linear-gradient(135deg,#E7EFE9,#D8E5DC)',
-    color: 'var(--green)',
-    icon: (
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-        <rect x="4" y="7" width="16" height="13" rx="2" />
-        <path d="M4 10h16M9 7V4h6v3" />
-      </svg>
-    ),
+    image: theDouxImage,
+    imageAlt: 'Tasse de thé doux servie dans une tasse en verre',
   },
   {
     tag: 'Standard',
     tagColor: 'var(--muted)',
     title: 'Coffret découverte',
     sub: 'Valeur 39 €',
-    bg: 'linear-gradient(135deg,#E7EFE9,#D8E5DC)',
-    color: 'var(--green)',
-    icon: (
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-        <rect x="4" y="6" width="16" height="14" rx="2" />
-        <path d="M4 11h16M12 6v14" />
-      </svg>
-    ),
+    image: coffretDecouverteImage,
+    imageAlt: 'Coffret découverte Thé Tip Top',
   },
   {
     tag: 'Premium',
     tagColor: 'var(--gold)',
     title: 'Boîte signature',
     sub: 'Valeur 69 €',
-    bg: 'linear-gradient(135deg,#F0E7CF,#E7D9AE)',
-    color: '#9A7E28',
-    icon: (
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-        <path d="M6 9h12l-1 3a5 5 0 01-10 0z" />
-        <path d="M9 3h6l-.5 3h-5z" />
-        <path d="M8 21h8M12 15v6" />
-      </svg>
-    ),
+    image: boiteSignatureImage,
+    imageAlt: 'Boîte signature Thé Tip Top ouverte',
   },
 ];
 
@@ -292,7 +273,12 @@ export default function Home() {
         <div className="ttt-auto-fit-200">
           {LOTS.map((lot) => (
             <Card hover key={lot.title} style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ height: 120, background: lot.bg, display: 'grid', placeItems: 'center', color: lot.color }}>{lot.icon}</div>
+              <img
+                src={lot.image}
+                alt={lot.imageAlt}
+                loading="lazy"
+                style={{ width: '100%', height: 150, display: 'block', objectFit: 'cover' }}
+              />
               <div style={{ padding: 18 }}>
                 <div style={{ fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: lot.tagColor, marginBottom: 6 }}>{lot.tag}</div>
                 <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>{lot.title}</h3>
@@ -310,16 +296,12 @@ export default function Home() {
               position: 'relative',
             }}
           >
-            <div style={{ height: 120, display: 'grid', placeItems: 'center', color: 'var(--gold)', position: 'relative' }}>
-              <div
-                aria-hidden="true"
-                style={{ position: 'absolute', inset: 0, background: 'radial-gradient(50% 60% at 50% 40%, rgba(196,168,78,.25), transparent 70%)' }}
-              />
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ position: 'relative' }}>
-                <path d="M5 8l3 3 4-5 4 5 3-3v9H5z" />
-                <path d="M5 20h14" />
-              </svg>
-            </div>
+            <img
+              src={unAnDeTheImage}
+              alt="Service à thé représentant le grand prix d'un an de thé offert"
+              loading="lazy"
+              style={{ width: '100%', height: 150, display: 'block', objectFit: 'cover' }}
+            />
             <div style={{ padding: 18 }}>
               <div style={{ fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--gold-soft)', marginBottom: 6 }}>✦ Grand prix</div>
               <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Un an de thé offert</h3>
