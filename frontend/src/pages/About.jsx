@@ -4,6 +4,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import FaqItem from '../components/ui/FaqItem';
 import { trackParticipationClick } from '../utils/analytics';
+import notreConceptImage from '../assets/products/notre-concept.webp';
 
 const PRIZES = [
   ['60 %', 'Un infuseur à thé'],
@@ -54,33 +55,20 @@ export default function About() {
               avant tout.
             </p>
           </div>
-          <div
+          <img
+            src={notreConceptImage}
+            alt="Tasse de thé biologique éclairée par la lumière naturelle"
+            loading="lazy"
             style={{
+              width: '100%',
               aspectRatio: '4/3',
               borderRadius: 22,
-              background: 'linear-gradient(140deg,#EEF0EA,#DCE4D8)',
               border: '1px solid var(--border)',
-              display: 'grid',
-              placeItems: 'center',
-              color: 'var(--green)',
-              position: 'relative',
-              overflow: 'hidden',
+              display: 'block',
+              objectFit: 'cover',
+              objectPosition: 'center 35%',
             }}
-          >
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundImage: 'radial-gradient(rgba(43,88,57,.05) 1px, transparent 1.4px)',
-                backgroundSize: '14px 14px',
-              }}
-            />
-            <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ position: 'relative' }}>
-              <path d="M12 3c-3 5-6 6-6 10a6 6 0 0012 0c0-4-3-5-6-10z" />
-              <path d="M12 8v9" />
-            </svg>
-          </div>
+          />
         </div>
       </section>
 
