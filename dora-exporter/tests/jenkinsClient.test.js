@@ -38,6 +38,7 @@ describe("buildUrl", () => {
   test("assemble une URL correcte", () => {
     const url = buildUrl(BASE.baseUrl, BASE.jobPath, 200);
     expect(url).toContain("http://jenkins:8080/jenkins/job/furious-duck/job/PREPROD/api/json");
+    expect(decodeURIComponent(url)).toContain("description");
     expect(url).toContain("tree=");
   });
 

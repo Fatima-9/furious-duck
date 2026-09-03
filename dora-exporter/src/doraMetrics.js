@@ -38,6 +38,18 @@ function isFailure(build) {
   return FAILURE_RESULTS.has(build.result);
 }
 
+function matchesEnvironment(build, environment) {
+  if (!environment) {
+    return true;
+  }
+
+  const description = String(build.description || "");
+  const expected = `deploy_env=${environment}`;
+  return description
+    .split(/\s+/)
+    .some((part) => part.toLowerCase() === expected.toLowerCase());
+}
+
 /** Instant ou le build s'est termine, en millisecondes. */
 function finishedAt(build) {
   return build.timestamp + (build.duration || 0);
@@ -136,9 +148,13 @@ function computeRestoreDurations(builds) {
  * @param {Array} builds  builds Jenkins bruts, ordre indifferent
  * @param {Object} options
  * @param {number} options.windowDays  fenetre d'observation en jours
+ * @param {string} options.environment environnement attendu dans la description Jenkins
  * @param {number} options.now         instant de reference en ms (injectable pour les tests)
  */
-function computeDoraMetrics(builds, { windowDays = 30, now = Date.now() } = {}) {
+function computeDoraMetrics(
+  builds,
+  { windowDays = 30, environment = "", now = Date.now() } = {}
+) {
   const windowMs = windowDays * 24 * 60 * 60 * 1000;
   const since = now - windowMs;
 
@@ -146,6 +162,7 @@ function computeDoraMetrics(builds, { windowDays = 30, now = Date.now() } = {}) 
     .filter((build) => typeof build.timestamp === "number")
     .filter((build) => build.timestamp >= since)
     .filter(isCompleted)
+    .filter((build) => matchesEnvironment(build, environment))
     // Du plus ancien au plus recent : indispensable pour reconstituer les
     // series d'echecs dans computeRestoreDurations.
     .sort((a, b) => a.timestamp - b.timestamp);
@@ -211,6 +228,7 @@ module.exports = {
   isCompleted,
   isFailure,
   isSuccess,
+  matchesEnvironment,
   median,
   oldestCommitTimestamp,
   percentile,

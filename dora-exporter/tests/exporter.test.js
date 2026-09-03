@@ -61,11 +61,13 @@ describe("config", () => {
       PORT: "9999",
       JENKINS_URL: "http://x",
       JENKINS_JOB_PATH: "job/y",
+      DORA_ENVIRONMENT: "preprod",
       DORA_WINDOW_DAYS: "7",
     });
     expect(config.port).toBe(9999);
     expect(config.jenkinsUrl).toBe("http://x");
     expect(config.jobPath).toBe("job/y");
+    expect(config.environment).toBe("preprod");
     expect(config.windowDays).toBe(7);
   });
 
@@ -169,6 +171,39 @@ describe("refreshMetrics", () => {
       (3 * DAY) / 1000
     );
     expect(metricValue(text, "dora_scrape_success")).toBe(1);
+  });
+
+  test("ne garde que les builds de l'environnement configure", async () => {
+    const { registry, metrics } = createRegistry();
+    const builds = [
+      {
+        number: 2,
+        description: "branch=PREPROD deploy_env=preprod",
+        result: "SUCCESS",
+        building: false,
+        timestamp: NOW - DAY,
+        duration: 0,
+      },
+      {
+        number: 1,
+        description: "branch=DEV deploy_env=dev",
+        result: "SUCCESS",
+        building: false,
+        timestamp: NOW - DAY,
+        duration: 0,
+      },
+    ];
+
+    await refreshMetrics({
+      metrics,
+      config: { ...CONFIG, environment: "preprod" },
+      fetchImpl: jenkinsResponding(builds),
+      now: () => NOW,
+    });
+
+    const text = await registry.metrics();
+    expect(metricValue(text, "dora_deployments_total")).toBe(1);
+    expect(metricValue(text, "dora_builds_total")).toBe(1);
   });
 
   test("passe scrape_success a 0 quand Jenkins echoue", async () => {

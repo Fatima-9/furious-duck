@@ -27,6 +27,7 @@ function loadConfig(env = process.env) {
     // Chemin du job dans Jenkins. Pour un pipeline multibranche, il inclut la
     // branche : "job/furious-duck/job/PREPROD".
     jobPath: env.JENKINS_JOB_PATH || "",
+    environment: env.DORA_ENVIRONMENT || "",
     jenkinsUser: env.JENKINS_USER || "",
     jenkinsToken: env.JENKINS_TOKEN || "",
 

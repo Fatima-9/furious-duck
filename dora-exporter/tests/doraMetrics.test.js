@@ -5,6 +5,7 @@ const {
   isCompleted,
   isFailure,
   isSuccess,
+  matchesEnvironment,
   median,
   oldestCommitTimestamp,
   percentile,
@@ -74,6 +75,16 @@ describe("helpers", () => {
     expect(isCompleted({ result: "ABORTED", building: false })).toBe(false);
   });
 
+  test("matchesEnvironment lit l'environnement marque par Jenkins", () => {
+    expect(
+      matchesEnvironment({ description: "branch=PREPROD deploy_env=preprod" }, "preprod")
+    ).toBe(true);
+    expect(
+      matchesEnvironment({ description: "branch=DEV deploy_env=dev" }, "preprod")
+    ).toBe(false);
+    expect(matchesEnvironment({ description: "" }, "")).toBe(true);
+  });
+
   test("oldestCommitTimestamp retient le commit le plus ancien", () => {
     const b = build({ commits: [NOW - 3 * DAY, NOW - 1 * DAY, NOW - 5 * DAY] });
     expect(oldestCommitTimestamp(b)).toBe(NOW - 5 * DAY);
@@ -126,6 +137,27 @@ describe("1. Frequence de deploiement", () => {
     const dora = computeDoraMetrics(builds, { windowDays: 30, now: NOW });
 
     expect(dora.deploymentsTotal).toBe(1);
+  });
+
+  test("filtre les builds par environnement quand Jenkins melange plusieurs branches", () => {
+    const builds = [
+      build({ daysAgo: 1, number: 3, result: "SUCCESS" }),
+      build({ daysAgo: 2, number: 2, result: "SUCCESS" }),
+      build({ daysAgo: 3, number: 1, result: "FAILURE" }),
+    ];
+    builds[0].description = "branch=PREPROD deploy_env=preprod";
+    builds[1].description = "branch=DEV deploy_env=dev";
+    builds[2].description = "branch=PREPROD deploy_env=preprod";
+
+    const dora = computeDoraMetrics(builds, {
+      windowDays: 30,
+      environment: "preprod",
+      now: NOW,
+    });
+
+    expect(dora.deploymentsTotal).toBe(1);
+    expect(dora.buildsTotal).toBe(2);
+    expect(dora.failuresTotal).toBe(1);
   });
 
   test("remonte l'horodatage du dernier deploiement", () => {

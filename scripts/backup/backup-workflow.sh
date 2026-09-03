@@ -129,8 +129,12 @@ if [ -d "$PROJECT_DIR" ]; then
     --exclude='.env' \
     docker-compose.yml \
     docker-compose.dev.live.yml \
+    docker-compose.preprod.live.yml \
     docker-compose.monitoring.yml \
+    docker-compose.monitoring.dev.yml \
     docker-compose.traefik.yml \
+    docker-compose.traefik.dev.yml \
+    docker-compose.traefik.preprod.yml \
     docker-compose.jenkins.yml \
     Jenkinsfile \
     monitoring \

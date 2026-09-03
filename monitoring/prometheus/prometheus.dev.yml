@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: dev
+
+scrape_configs:
+  - job_name: "prometheus"
+    metrics_path: /prometheus/metrics
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+  - job_name: furious-duck-backend-dev
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names:
+          - backend
+        type: A
+        port: 5000
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  - job_name: node-exporter
+    static_configs:
+      - targets:
+          - node-exporter:9100
+    relabel_configs:
+      - target_label: instance
+        replacement: vm-dev
+
+  - job_name: traefik
+    static_configs:
+      - targets:
+          - furious_duck_traefik:8082
+    relabel_configs:
+      - target_label: instance
+        replacement: traefik-dev
+
+  - job_name: dora
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - dora-exporter:9110
+    relabel_configs:
+      - target_label: instance
+        replacement: dora-dev

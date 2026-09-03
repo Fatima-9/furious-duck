@@ -137,6 +137,7 @@ async function refreshMetrics({ metrics, config, fetchImpl, now = Date.now }) {
 
     const dora = computeDoraMetrics(builds, {
       windowDays: config.windowDays,
+      environment: config.environment,
       now: now(),
     });
 

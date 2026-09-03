@@ -13,6 +13,7 @@ const DEFAULT_TIMEOUT_MS = 15000;
  */
 const BUILD_TREE = [
   "number",
+  "description",
   "result",
   "timestamp",
   "duration",

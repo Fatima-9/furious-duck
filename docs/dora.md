@@ -36,7 +36,11 @@ Ces choix comptent, parce qu'ils changent les chiffres. Ils sont tous couverts
 par des tests dans [`dora-exporter/tests/`](../dora-exporter/tests).
 
 **Ce qui compte comme un déploiement.** Un build Jenkins terminé avec le
-résultat `SUCCESS` sur la branche déployée.
+résultat `SUCCESS` sur l'environnement suivi (`dev`, `preprod` ou `prod`).
+Le Jenkinsfile marque chaque build avec une description du type
+`branch=PREPROD deploy_env=preprod`, puis l'exporter filtre sur cette valeur.
+Cela évite qu'un build DEV soit compté dans les chiffres PREPROD quand Jenkins
+utilise un job unique.
 
 **Ce qui compte comme un échec.** `FAILURE` et `UNSTABLE`. `UNSTABLE` signifie
 que le build est passé mais que des tests sont rouges : au sens DORA, le
@@ -101,6 +105,7 @@ faire clignoter les dashboards à chaque hoquet réseau.
 |---|---|---|
 | `JENKINS_URL` | — (obligatoire) | Ex. `http://furious_duck_jenkins:8080/jenkins` |
 | `JENKINS_JOB_PATH` | — (obligatoire) | Ex. `job/furious-duck/job/PREPROD` |
+| `DORA_ENVIRONMENT` | vide | Filtre les builds par environnement (`dev`, `preprod`, `prod`) |
 | `JENKINS_USER` | vide | Compte de service Jenkins |
 | `JENKINS_TOKEN` | vide | Jeton d'API du compte |
 | `DORA_WINDOW_DAYS` | `30` | Fenêtre d'observation |
@@ -115,6 +120,11 @@ L'URL doit inclure le préfixe `/jenkins` : Jenkins tourne avec
 Le `JENKINS_JOB_PATH` est calculé automatiquement par le Jenkinsfile à partir
 de `JOB_NAME` : sur un pipeline multibranche, `furious-duck/PREPROD` devient
 `job/furious-duck/job/PREPROD`.
+
+`DORA_ENVIRONMENT` vient aussi du Jenkinsfile. Sur PREPROD, sa valeur est
+`preprod`; sur DEV, sa valeur est `dev`. Les anciens builds qui n'ont pas cette
+description ne sont pas utilisés quand le filtre est actif : les chiffres
+deviennent donc fiables à partir des prochains builds.
 
 Le cache de 60 s est important : Prometheus scrape toutes les 15 s, soit
 5 760 appels par jour à l'API Jenkins sans lui, pour une donnée qui ne bouge
@@ -143,6 +153,7 @@ npm install
 
 JENKINS_URL=https://preprod.dsp5-archi-o24a-g2.fr/jenkins \
 JENKINS_JOB_PATH=job/furious-duck/job/PREPROD \
+DORA_ENVIRONMENT=preprod \
 JENKINS_USER=<compte> \
 JENKINS_TOKEN=<jeton> \
 npm start
@@ -185,19 +196,12 @@ Si `dora_scrape_success` vaut 0, les causes habituelles sont : mauvais
 ## Limite à connaître
 
 Les métriques sont calculées **à la demande** sur une fenêtre glissante de
-30 jours, à partir de l'historique Jenkins. Elles ne sont donc valables que
-tant que Jenkins conserve ses builds : le Jenkinsfile utilise
-`buildDiscarder(logRotator(numToKeepStr: '10'))`, qui ne garde que **les 10
-derniers builds**.
-
-Avec 10 builds conservés, la fenêtre de 30 jours ne contiendra jamais plus de
-10 déploiements, ce qui fausse la fréquence de déploiement dès que le rythme
-dépasse un build tous les trois jours. Pour des métriques DORA fiables, il faut
-augmenter cette rétention, par exemple :
+30 jours, à partir de l'historique Jenkins. Le Jenkinsfile conserve maintenant
+jusqu'à **200 builds pendant 90 jours** :
 
 ```groovy
 buildDiscarder(logRotator(numToKeepStr: '200', daysToKeepStr: '90'))
 ```
 
-Ce changement n'est pas inclus dans cette branche : il modifie le comportement
-de la pipeline au-delà des métriques et mérite une décision explicite.
+Cette rétention donne assez d'historique pour afficher des métriques DORA plus
+réalistes sur 30 jours.

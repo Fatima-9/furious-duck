@@ -1,0 +1,95 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: furious_duck_prometheus_dev
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.external-url=https://dev.dsp5-archi-o24a-g2.fr/prometheus"
+      - "--web.route-prefix=/prometheus"
+    volumes:
+      - ${VM_PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}/monitoring/prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data_dev:/prometheus
+    networks:
+      - default
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.prometheus-dev.rule=(Host(`dev.dsp5-archi-o24a-g2.fr`) || Host(`dev.dsp5-archi-o24a-g2.com`)) && (Path(`/prometheus`) || PathPrefix(`/prometheus/`))"
+      - "traefik.http.routers.prometheus-dev.priority=1000"
+      - "traefik.http.routers.prometheus-dev.entrypoints=websecure"
+      - "traefik.http.routers.prometheus-dev.tls=true"
+      - "traefik.http.routers.prometheus-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prometheus-dev.loadbalancer.server.port=9090"
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: furious_duck_grafana_dev
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD est requis}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://dev.dsp5-archi-o24a-g2.fr/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - grafana_data_dev:/var/lib/grafana
+      - ${VM_PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ${VM_PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ${VM_PROJECT_DIR:-/home/thetiptop_gp2/furious-duck}/monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+    networks:
+      - default
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.grafana-dev.rule=(Host(`dev.dsp5-archi-o24a-g2.fr`) || Host(`dev.dsp5-archi-o24a-g2.com`)) && (Path(`/grafana`) || PathPrefix(`/grafana/`))"
+      - "traefik.http.routers.grafana-dev.priority=1000"
+      - "traefik.http.routers.grafana-dev.entrypoints=websecure"
+      - "traefik.http.routers.grafana-dev.tls=true"
+      - "traefik.http.routers.grafana-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grafana-dev.loadbalancer.server.port=3000"
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: furious_duck_node_exporter_dev
+    restart: unless-stopped
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/host/root"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|rootfs/var/lib/docker)($$|/)"
+      - "--collector.netdev.device-exclude=^(veth|docker|br-|lo).*$$"
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro,rslave
+    networks:
+      - default
+
+  dora-exporter:
+    build: ./dora-exporter
+    container_name: furious_duck_dora_exporter_dev
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=${DORA_JENKINS_URL:-http://furious_duck_jenkins:8080/jenkins}
+      - JENKINS_JOB_PATH=${DORA_JENKINS_JOB_PATH:-job/furious-duck/job/DEV}
+      - DORA_ENVIRONMENT=${DORA_ENVIRONMENT:-dev}
+      - JENKINS_USER=${DORA_JENKINS_USER:-}
+      - JENKINS_TOKEN=${DORA_JENKINS_TOKEN:-}
+      - DORA_WINDOW_DAYS=${DORA_WINDOW_DAYS:-30}
+    networks:
+      - default
+      - traefik_proxy
+
+volumes:
+  prometheus_data_dev:
+  grafana_data_dev:
+
+networks:
+  traefik_proxy:
+    external: true

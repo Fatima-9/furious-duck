@@ -104,6 +104,7 @@ services:
       # de l'URL de l'API, sans lui Jenkins repond 404.
       - JENKINS_URL=${DORA_JENKINS_URL:-http://furious_duck_jenkins:8080/jenkins}
       - JENKINS_JOB_PATH=${DORA_JENKINS_JOB_PATH:-job/furious-duck/job/PREPROD}
+      - DORA_ENVIRONMENT=${DORA_ENVIRONMENT:-preprod}
       - JENKINS_USER=${DORA_JENKINS_USER:-}
       - JENKINS_TOKEN=${DORA_JENKINS_TOKEN:-}
       - DORA_WINDOW_DAYS=${DORA_WINDOW_DAYS:-30}

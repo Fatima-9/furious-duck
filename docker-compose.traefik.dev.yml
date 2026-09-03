@@ -1,0 +1,60 @@
+services:
+  traefik:
+    image: traefik:v3.6.2
+    container_name: furious_duck_traefik
+    restart: unless-stopped
+    environment:
+      DOCKER_API_VERSION: "1.40"
+    command:
+      - "--api.dashboard=true"
+      - "--api.basePath=/traefik"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.metrics.address=:8082"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entryPoint=metrics"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addRoutersLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus.buckets=0.05,0.1,0.25,0.5,1,2.5,5,10"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--accesslog.format=json"
+      - "--accesslog.fields.headers.names.Authorization=drop"
+      - "--accesslog.fields.headers.names.Cookie=drop"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.email=thetiptop.gp2@gmail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - traefik_logs:/var/log/traefik
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dev.rule=(Host(`dev.dsp5-archi-o24a-g2.fr`) || Host(`dev.dsp5-archi-o24a-g2.com`)) && PathPrefix(`/traefik`)"
+      - "traefik.http.routers.traefik-dev.priority=600"
+      - "traefik.http.routers.traefik-dev.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dev.tls=true"
+      - "traefik.http.routers.traefik-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dev.service=api@internal"
+      - "traefik.http.routers.traefik-dev.middlewares=traefik-dev-auth"
+      - "traefik.http.middlewares.traefik-dev-auth.basicauth.users=admin:$$2y$$05$$xdEuLs25YdFfFZ6gZVZemeFea2VHE4k6FeV1SOIvOkpj3TmFZq4qC"
+
+volumes:
+  traefik_letsencrypt:
+  traefik_logs:
+
+networks:
+  traefik_proxy:
+    external: true

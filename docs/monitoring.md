@@ -132,7 +132,7 @@ Sur la VM (fait automatiquement par Jenkins au déploiement) :
 ```bash
 docker compose -p furious-duck-preprod-live \
   -f docker-compose.yml \
-  -f docker-compose.dev.live.yml \
+  -f docker-compose.preprod.live.yml \
   -f docker-compose.monitoring.yml \
   up -d --build --scale backend=2 --scale frontend=2
 ```
@@ -191,6 +191,6 @@ qu'il n'est pas sur le réseau `traefik_proxy`.
 ```bash
 docker compose -p furious-duck-preprod-live \
   -f docker-compose.yml \
-  -f docker-compose.dev.live.yml \
+  -f docker-compose.preprod.live.yml \
   -f docker-compose.monitoring.yml down
 ```

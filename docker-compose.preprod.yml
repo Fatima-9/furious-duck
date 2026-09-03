@@ -1,8 +1,0 @@
-services:
-  backend:
-    environment:
-      - NODE_ENV=staging
-
-  frontend:
-    environment:
-      - VITE_API_URL=https://api-preprod.monsite.com

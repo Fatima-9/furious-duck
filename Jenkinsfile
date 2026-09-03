@@ -8,7 +8,7 @@ pipeline {
   options {
     timestamps()
     disableConcurrentBuilds()
-    buildDiscarder(logRotator(numToKeepStr: '10'))
+    buildDiscarder(logRotator(numToKeepStr: '200', daysToKeepStr: '90'))
   }
 
   environment {
@@ -39,17 +39,25 @@ pipeline {
             env.DEPLOY_ENV = 'prod'
             env.APP_URL = 'https://dsp5-archi-o24a-g2.fr'
             env.COMPOSE_PROJECT_NAME = 'furious-duck-prod-live'
+            env.COMPOSE_LIVE_FILE = 'docker-compose.prod.yml'
+            env.COMPOSE_MONITORING_FILE = 'docker-compose.monitoring.yml'
           } else if (branch == 'PREPROD') {
             env.COVERAGE_MIN = '80'
             env.DEPLOY_ENV = 'preprod'
             env.APP_URL = 'https://preprod.dsp5-archi-o24a-g2.fr'
             env.COMPOSE_PROJECT_NAME = 'furious-duck-preprod-live'
+            env.COMPOSE_LIVE_FILE = 'docker-compose.preprod.live.yml'
+            env.COMPOSE_MONITORING_FILE = 'docker-compose.monitoring.yml'
           } else {
             env.COVERAGE_MIN = '60'
             env.DEPLOY_ENV = 'dev'
             env.APP_URL = 'https://dev.dsp5-archi-o24a-g2.fr'
             env.COMPOSE_PROJECT_NAME = 'furious-duck-dev-live'
+            env.COMPOSE_LIVE_FILE = 'docker-compose.dev.live.yml'
+            env.COMPOSE_MONITORING_FILE = 'docker-compose.monitoring.dev.yml'
           }
+
+          env.DORA_ENVIRONMENT = env.DEPLOY_ENV
 
           // Chemin du job dans l'API Jenkins, pour l'exporter DORA.
           // JOB_NAME vaut "furious-duck/PREPROD" sur un pipeline multibranche,
@@ -63,6 +71,8 @@ pipeline {
           echo "Chemin API du job: ${env.DORA_JENKINS_JOB_PATH}"
           echo "Deploy environment: ${env.DEPLOY_ENV}"
           echo "Coverage threshold: ${env.COVERAGE_MIN}%"
+
+          currentBuild.description = "branch=${branch} deploy_env=${env.DEPLOY_ENV}"
         }
       }
     }
@@ -382,8 +392,8 @@ EOF
 
       docker compose -p "${COMPOSE_PROJECT_NAME}" \
         -f docker-compose.yml \
-        -f docker-compose.dev.live.yml \
-        -f docker-compose.monitoring.yml \
+        -f "${COMPOSE_LIVE_FILE}" \
+        -f "${COMPOSE_MONITORING_FILE}" \
         up -d --build --scale backend=2 --scale frontend=2
     '''
   }

@@ -51,7 +51,7 @@ sauvegarde valide.
 | `prometheus_data_preprod` | Historique des métriques. Perdu = plus d'antériorité pour les métriques DORA. |
 | `grafana_data_preprod` | Dashboards créés à la main, utilisateurs. |
 | `traefik_letsencrypt` | `acme.json` = certificats TLS. Sans lui, Let's Encrypt doit tout réémettre, avec un risque de rate limit. |
-| Configs | `docker-compose*.yml`, `Jenkinsfile`, `monitoring/`, `scripts/` tels que déployés sur la VM. |
+| Configs | `docker-compose*.yml`, `Jenkinsfile`, `monitoring/`, `scripts/`, `traefik/` tels que déployés sur la VM. |
 
 Les noms de volumes Docker sont préfixés par le nom du projet Compose
 (`furious-duck-preprod-live_prometheus_data_preprod`). Ce préfixe change selon
@@ -151,6 +151,21 @@ docker compose -p furious-duck-preprod-live start grafana
 
 Adaptez le nom du volume et de l'archive (`jenkins.tar.gz`, `prometheus.tar.gz`,
 `traefik.tar.gz`).
+
+## Ce qu'il faut savoir pour la soutenance
+
+Une sauvegarde existe vraiment seulement si elle peut être restaurée. Ici, la
+base Neon est sauvegardée tous les jours, puis le fichier produit est relu avec
+`pg_restore --list`. Si le fichier est cassé, il est supprimé et le script
+termine en erreur au lieu de laisser une fausse sauvegarde.
+
+Le workflow est aussi sauvegardé : Jenkins, Prometheus, Grafana, les certificats
+Traefik et les fichiers de configuration présents sur la VM. Cette sauvegarde
+permet de reconstruire l'environnement plus vite si la VM est perdue.
+
+Les archives sont gardées 14 jours. Il faut donc surveiller régulièrement le
+dossier `/home/thetiptop_gp2/backups/`, les logs `backup.log` et `cron.log`, et
+faire au moins un test de restauration sur une base de test avant la soutenance.
 
 ## Variables d'environnement
 
