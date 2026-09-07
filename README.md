@@ -385,21 +385,21 @@ furious-duck-sonarqube-token
 Credentials Jenkins necessaires pour PROD / main :
 
 ```text
-furious-duck-prod-database-url
-furious-duck-prod-jwt-secret
-furious-duck-prod-turnstile-site-key
-furious-duck-prod-turnstile-secret-key
-furious-duck-prod-google-client-id
-furious-duck-prod-facebook-app-id
-furious-duck-prod-smtp-host
-furious-duck-prod-smtp-port
-furious-duck-prod-smtp-secure
-furious-duck-prod-smtp-user
-furious-duck-prod-smtp-pass
-furious-duck-prod-smtp-from
+furious-duck-database-url
+furious-duck-jwt-secret
+furious-duck-turnstile-site-key
+furious-duck-turnstile-secret-key
+furious-duck-google-client-id
+furious-duck-facebook-app-id
+furious-duck-smtp-host
+furious-duck-smtp-port
+furious-duck-smtp-secure
+furious-duck-smtp-user
+furious-duck-smtp-pass
+furious-duck-smtp-from
 furious-duck-jenkins-api-user
 furious-duck-jenkins-api-token
-furious-duck-prod-grafana-admin-password
+furious-duck-grafana-admin-password
 furious-duck-sonarqube-host-url
 furious-duck-sonarqube-token
 ```
