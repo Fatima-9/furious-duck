@@ -1,6 +1,46 @@
 services:
-  frontend:
-    command: npm run build
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.live
+    restart: unless-stopped
+    volumes: !reset []
+    ports: !override []
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
+    networks:
+      - default
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.backend-prod.rule=(Host(`dsp5-archi-o24a-g2.fr`) || Host(`dsp5-archi-o24a-g2.com`)) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-prod.priority=300"
+      - "traefik.http.routers.backend-prod.entrypoints=websecure"
+      - "traefik.http.routers.backend-prod.tls=true"
+      - "traefik.http.routers.backend-prod.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend-prod.loadbalancer.server.port=5000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.live
+    restart: unless-stopped
+    volumes: !reset []
+    ports: !override []
+    networks:
+      - default
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.frontend-prod.rule=Host(`dsp5-archi-o24a-g2.fr`) || Host(`dsp5-archi-o24a-g2.com`)"
+      - "traefik.http.routers.frontend-prod.priority=1"
+      - "traefik.http.routers.frontend-prod.entrypoints=websecure"
+      - "traefik.http.routers.frontend-prod.tls=true"
+      - "traefik.http.routers.frontend-prod.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend-prod.loadbalancer.server.port=80"
+
+networks:
+  traefik_proxy:
+    external: true

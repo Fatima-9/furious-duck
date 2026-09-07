@@ -150,22 +150,30 @@ Arret avec suppression des volumes :
 docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 ```
 
-## Deploiement live DEV / PREPROD
+## Deploiement live DEV / PREPROD / PROD
 
 Le deploiement public utilise :
 
 - Traefik en reverse proxy HTTPS ;
 - le backend sur le port interne `5000` ;
 - le frontend servi en statique par Nginx dans `frontend/Dockerfile.live` ;
-- Prometheus et Grafana via `docker-compose.monitoring.yml`.
+- Prometheus et Grafana via le fichier monitoring de l'environnement.
 
-Commande type :
+Commandes type :
 
 ```bash
 docker compose -p furious-duck-preprod-live \
   -f docker-compose.yml \
-  -f docker-compose.dev.live.yml \
+  -f docker-compose.preprod.live.yml \
   -f docker-compose.monitoring.yml \
+  up -d --build --scale backend=2 --scale frontend=2
+```
+
+```bash
+docker compose -p furious-duck-prod-live \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  -f docker-compose.monitoring.prod.yml \
   up -d --build --scale backend=2 --scale frontend=2
 ```
 
@@ -193,6 +201,17 @@ https://preprod.dsp5-archi-o24a-g2.fr/jenkins/
 https://preprod.dsp5-archi-o24a-g2.fr/prometheus/
 https://preprod.dsp5-archi-o24a-g2.fr/grafana/
 https://preprod.dsp5-archi-o24a-g2.fr/traefik/dashboard/
+```
+
+PROD :
+
+```text
+https://dsp5-archi-o24a-g2.fr
+https://dsp5-archi-o24a-g2.com
+https://dsp5-archi-o24a-g2.fr/api/health
+https://dsp5-archi-o24a-g2.fr/prometheus/
+https://dsp5-archi-o24a-g2.fr/grafana/
+https://dsp5-archi-o24a-g2.fr/traefik/dashboard/
 ```
 
 ## Fonctionnalites principales
@@ -307,7 +326,7 @@ COVERAGE_MIN=100 npm --prefix backend run test:coverage
 Etat actuel :
 
 - 36 suites de tests passent ;
-- 200 tests passent ;
+- 205 tests passent ;
 - coverage lignes backend : 100 %.
 
 La pipeline controle actuellement la couverture des lignes.
@@ -337,15 +356,50 @@ Ordre de la pipeline :
 7. build des images Docker ;
 8. sauvegarde des images Docker avec `docker save` ;
 9. tests fonctionnels Docker Compose ;
-10. deploiement DEV ou PREPROD.
+10. deploiement DEV, PREPROD ou PROD.
 
-Credentials Jenkins necessaires :
+Credentials Jenkins necessaires pour DEV / PREPROD :
 
 ```text
 furious-duck-database-url
 furious-duck-jwt-secret
 furious-duck-turnstile-site-key
 furious-duck-turnstile-secret-key
+furious-duck-google-client-id
+furious-duck-facebook-app-id
+furious-duck-smtp-host
+furious-duck-smtp-port
+furious-duck-smtp-secure
+furious-duck-smtp-user
+furious-duck-smtp-pass
+furious-duck-smtp-from
+furious-duck-jenkins-api-user
+furious-duck-jenkins-api-token
+furious-duck-grafana-admin-password
+furious-duck-sonarqube-host-url
+furious-duck-sonarqube-token
+```
+
+Credentials Jenkins necessaires pour PROD / main :
+
+```text
+furious-duck-prod-database-url
+furious-duck-prod-jwt-secret
+furious-duck-prod-turnstile-site-key
+furious-duck-prod-turnstile-secret-key
+furious-duck-prod-google-client-id
+furious-duck-prod-facebook-app-id
+furious-duck-prod-smtp-host
+furious-duck-prod-smtp-port
+furious-duck-prod-smtp-secure
+furious-duck-prod-smtp-user
+furious-duck-prod-smtp-pass
+furious-duck-prod-smtp-from
+furious-duck-jenkins-api-user
+furious-duck-jenkins-api-token
+furious-duck-prod-grafana-admin-password
+furious-duck-sonarqube-host-url
+furious-duck-sonarqube-token
 ```
 
 ## Monitoring
@@ -372,11 +426,17 @@ Traefik dashboard :
 
 - `docker-compose.yml` : base commune backend/frontend.
 - `docker-compose.dev.yml` : mode developpement local.
-- `docker-compose.dev.live.yml` : mode live DEV/PREPROD derriere Traefik.
+- `docker-compose.dev.live.yml` : mode live DEV derriere Traefik.
+- `docker-compose.preprod.live.yml` : mode live PREPROD derriere Traefik.
+- `docker-compose.prod.yml` : mode live PROD derriere Traefik.
 - `docker-compose.ci.yml` : configuration utilisee par Jenkins pour les tests fonctionnels.
 - `docker-compose.jenkins.yml` : lancement Jenkins.
-- `docker-compose.monitoring.yml` : Prometheus et Grafana.
-- `docker-compose.traefik.yml` : reverse proxy HTTPS Traefik.
+- `docker-compose.monitoring.yml` : Prometheus et Grafana PREPROD.
+- `docker-compose.monitoring.dev.yml` : Prometheus et Grafana DEV.
+- `docker-compose.monitoring.prod.yml` : Prometheus et Grafana PROD.
+- `docker-compose.traefik.dev.yml` : reverse proxy HTTPS Traefik DEV.
+- `docker-compose.traefik.preprod.yml` : reverse proxy HTTPS Traefik PREPROD.
+- `docker-compose.traefik.prod.yml` : reverse proxy HTTPS Traefik PROD.
 - `backend/Dockerfile.live` : image backend de deploiement.
 - `frontend/Dockerfile.live` : build frontend puis service statique via Nginx.
 - `frontend/nginx.conf` : configuration Nginx pour l'application React.

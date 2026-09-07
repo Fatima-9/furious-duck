@@ -10,10 +10,11 @@ l'envoie au bon conteneur Docker.
 |---|---|---|
 | DEV | `docker-compose.traefik.dev.yml` | `dev.dsp5-archi-o24a-g2.fr`, `dev.dsp5-archi-o24a-g2.com` |
 | PREPROD | `docker-compose.traefik.preprod.yml` | `preprod.dsp5-archi-o24a-g2.fr`, `preprod.dsp5-archi-o24a-g2.com` |
+| PROD | `docker-compose.traefik.prod.yml` | `dsp5-archi-o24a-g2.fr`, `dsp5-archi-o24a-g2.com` |
 
 Le fichier `docker-compose.traefik.yml` reste le fichier historique. Pour les
-VM, il faut utiliser les fichiers explicites `dev` ou `preprod` afin d'éviter
-de lancer le mauvais domaine.
+VM, il faut utiliser les fichiers explicites `dev`, `preprod` ou `prod` afin
+d'éviter de lancer le mauvais domaine.
 
 ## Lancer Traefik sur PREPROD
 
@@ -29,6 +30,14 @@ docker compose -f docker-compose.traefik.preprod.yml up -d
 cd /home/thetiptop_gp2/furious-duck
 docker network create traefik_proxy 2>/dev/null || true
 docker compose -f docker-compose.traefik.dev.yml up -d
+```
+
+## Lancer Traefik sur PROD
+
+```bash
+cd /home/thetiptop_gp2/furious-duck
+docker network create traefik_proxy 2>/dev/null || true
+docker compose -f docker-compose.traefik.prod.yml up -d
 ```
 
 ## Vérifier
@@ -49,3 +58,12 @@ https://preprod.dsp5-archi-o24a-g2.fr/traefik
 ```
 
 Sur DEV, il faut remplacer `preprod` par `dev`.
+
+Sur PROD, les accès attendus sont :
+
+```text
+https://dsp5-archi-o24a-g2.fr
+https://dsp5-archi-o24a-g2.fr/grafana
+https://dsp5-archi-o24a-g2.fr/prometheus
+https://dsp5-archi-o24a-g2.fr/traefik
+```

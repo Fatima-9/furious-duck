@@ -40,7 +40,20 @@ pipeline {
             env.APP_URL = 'https://dsp5-archi-o24a-g2.fr'
             env.COMPOSE_PROJECT_NAME = 'furious-duck-prod-live'
             env.COMPOSE_LIVE_FILE = 'docker-compose.prod.yml'
-            env.COMPOSE_MONITORING_FILE = 'docker-compose.monitoring.yml'
+            env.COMPOSE_MONITORING_FILE = 'docker-compose.monitoring.prod.yml'
+            env.DATABASE_CREDENTIAL_ID = 'furious-duck-prod-database-url'
+            env.JWT_CREDENTIAL_ID = 'furious-duck-prod-jwt-secret'
+            env.TURNSTILE_SITE_CREDENTIAL_ID = 'furious-duck-prod-turnstile-site-key'
+            env.TURNSTILE_SECRET_CREDENTIAL_ID = 'furious-duck-prod-turnstile-secret-key'
+            env.GOOGLE_CLIENT_CREDENTIAL_ID = 'furious-duck-prod-google-client-id'
+            env.FACEBOOK_APP_CREDENTIAL_ID = 'furious-duck-prod-facebook-app-id'
+            env.SMTP_HOST_CREDENTIAL_ID = 'furious-duck-prod-smtp-host'
+            env.SMTP_PORT_CREDENTIAL_ID = 'furious-duck-prod-smtp-port'
+            env.SMTP_SECURE_CREDENTIAL_ID = 'furious-duck-prod-smtp-secure'
+            env.SMTP_USER_CREDENTIAL_ID = 'furious-duck-prod-smtp-user'
+            env.SMTP_PASS_CREDENTIAL_ID = 'furious-duck-prod-smtp-pass'
+            env.SMTP_FROM_CREDENTIAL_ID = 'furious-duck-prod-smtp-from'
+            env.GRAFANA_ADMIN_PASSWORD_CREDENTIAL_ID = 'furious-duck-prod-grafana-admin-password'
           } else if (branch == 'PREPROD') {
             env.COVERAGE_MIN = '80'
             env.DEPLOY_ENV = 'preprod'
@@ -48,6 +61,19 @@ pipeline {
             env.COMPOSE_PROJECT_NAME = 'furious-duck-preprod-live'
             env.COMPOSE_LIVE_FILE = 'docker-compose.preprod.live.yml'
             env.COMPOSE_MONITORING_FILE = 'docker-compose.monitoring.yml'
+            env.DATABASE_CREDENTIAL_ID = 'furious-duck-database-url'
+            env.JWT_CREDENTIAL_ID = 'furious-duck-jwt-secret'
+            env.TURNSTILE_SITE_CREDENTIAL_ID = 'furious-duck-turnstile-site-key'
+            env.TURNSTILE_SECRET_CREDENTIAL_ID = 'furious-duck-turnstile-secret-key'
+            env.GOOGLE_CLIENT_CREDENTIAL_ID = 'furious-duck-google-client-id'
+            env.FACEBOOK_APP_CREDENTIAL_ID = 'furious-duck-facebook-app-id'
+            env.SMTP_HOST_CREDENTIAL_ID = 'furious-duck-smtp-host'
+            env.SMTP_PORT_CREDENTIAL_ID = 'furious-duck-smtp-port'
+            env.SMTP_SECURE_CREDENTIAL_ID = 'furious-duck-smtp-secure'
+            env.SMTP_USER_CREDENTIAL_ID = 'furious-duck-smtp-user'
+            env.SMTP_PASS_CREDENTIAL_ID = 'furious-duck-smtp-pass'
+            env.SMTP_FROM_CREDENTIAL_ID = 'furious-duck-smtp-from'
+            env.GRAFANA_ADMIN_PASSWORD_CREDENTIAL_ID = 'furious-duck-grafana-admin-password'
           } else {
             env.COVERAGE_MIN = '60'
             env.DEPLOY_ENV = 'dev'
@@ -55,6 +81,19 @@ pipeline {
             env.COMPOSE_PROJECT_NAME = 'furious-duck-dev-live'
             env.COMPOSE_LIVE_FILE = 'docker-compose.dev.live.yml'
             env.COMPOSE_MONITORING_FILE = 'docker-compose.monitoring.dev.yml'
+            env.DATABASE_CREDENTIAL_ID = 'furious-duck-database-url'
+            env.JWT_CREDENTIAL_ID = 'furious-duck-jwt-secret'
+            env.TURNSTILE_SITE_CREDENTIAL_ID = 'furious-duck-turnstile-site-key'
+            env.TURNSTILE_SECRET_CREDENTIAL_ID = 'furious-duck-turnstile-secret-key'
+            env.GOOGLE_CLIENT_CREDENTIAL_ID = 'furious-duck-google-client-id'
+            env.FACEBOOK_APP_CREDENTIAL_ID = 'furious-duck-facebook-app-id'
+            env.SMTP_HOST_CREDENTIAL_ID = 'furious-duck-smtp-host'
+            env.SMTP_PORT_CREDENTIAL_ID = 'furious-duck-smtp-port'
+            env.SMTP_SECURE_CREDENTIAL_ID = 'furious-duck-smtp-secure'
+            env.SMTP_USER_CREDENTIAL_ID = 'furious-duck-smtp-user'
+            env.SMTP_PASS_CREDENTIAL_ID = 'furious-duck-smtp-pass'
+            env.SMTP_FROM_CREDENTIAL_ID = 'furious-duck-smtp-from'
+            env.GRAFANA_ADMIN_PASSWORD_CREDENTIAL_ID = 'furious-duck-grafana-admin-password'
           }
 
           env.DORA_ENVIRONMENT = env.DEPLOY_ENV
@@ -111,9 +150,9 @@ pipeline {
       }
       steps {
         withCredentials([
-          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
-          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET'),
-          string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY')
+          string(credentialsId: env.DATABASE_CREDENTIAL_ID, variable: 'DATABASE_URL'),
+          string(credentialsId: env.JWT_CREDENTIAL_ID, variable: 'JWT_SECRET'),
+          string(credentialsId: env.TURNSTILE_SECRET_CREDENTIAL_ID, variable: 'TURNSTILE_SECRET_KEY')
         ]) {
           sh '''
             cat > backend/.env <<EOF
@@ -198,9 +237,9 @@ EOF
     stage('Frontend Build') {
       steps {
         withCredentials([
-          string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY'),
-          string(credentialsId: 'furious-duck-google-client-id', variable: 'VITE_GOOGLE_CLIENT_ID'),
-          string(credentialsId: 'furious-duck-facebook-app-id', variable: 'VITE_FACEBOOK_APP_ID')
+          string(credentialsId: env.TURNSTILE_SITE_CREDENTIAL_ID, variable: 'VITE_TURNSTILE_SITE_KEY'),
+          string(credentialsId: env.GOOGLE_CLIENT_CREDENTIAL_ID, variable: 'VITE_GOOGLE_CLIENT_ID'),
+          string(credentialsId: env.FACEBOOK_APP_CREDENTIAL_ID, variable: 'VITE_FACEBOOK_APP_ID')
         ]) {
           dir('frontend') {
             sh '''
@@ -244,12 +283,12 @@ EOF
     stage('Docker Compose Functional Tests') {
       steps {
         withCredentials([
-          string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
-          string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET'),
-          string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY'),
-          string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY'),
-          string(credentialsId: 'furious-duck-google-client-id', variable: 'VITE_GOOGLE_CLIENT_ID'),
-          string(credentialsId: 'furious-duck-facebook-app-id', variable: 'VITE_FACEBOOK_APP_ID')
+          string(credentialsId: env.DATABASE_CREDENTIAL_ID, variable: 'DATABASE_URL'),
+          string(credentialsId: env.JWT_CREDENTIAL_ID, variable: 'JWT_SECRET'),
+          string(credentialsId: env.TURNSTILE_SITE_CREDENTIAL_ID, variable: 'VITE_TURNSTILE_SITE_KEY'),
+          string(credentialsId: env.TURNSTILE_SECRET_CREDENTIAL_ID, variable: 'TURNSTILE_SECRET_KEY'),
+          string(credentialsId: env.GOOGLE_CLIENT_CREDENTIAL_ID, variable: 'VITE_GOOGLE_CLIENT_ID'),
+          string(credentialsId: env.FACEBOOK_APP_CREDENTIAL_ID, variable: 'VITE_FACEBOOK_APP_ID')
         ]) {
           sh '''
             cat > backend/.env <<EOF
@@ -336,7 +375,9 @@ EOF
         }
       }
       steps {
-        echo 'PROD deployment is not configured yet. Coverage is checked at 100%, but deployment is intentionally skipped.'
+        script {
+          deployEnvironment()
+        }
       }
     }
   }
@@ -344,25 +385,25 @@ EOF
 
 def deployEnvironment() {
   withCredentials([
-    string(credentialsId: 'furious-duck-database-url', variable: 'DATABASE_URL'),
-    string(credentialsId: 'furious-duck-jwt-secret', variable: 'JWT_SECRET'),
-    string(credentialsId: 'furious-duck-turnstile-site-key', variable: 'VITE_TURNSTILE_SITE_KEY'),
-    string(credentialsId: 'furious-duck-turnstile-secret-key', variable: 'TURNSTILE_SECRET_KEY'),
-    string(credentialsId: 'furious-duck-google-client-id', variable: 'VITE_GOOGLE_CLIENT_ID'),
-    string(credentialsId: 'furious-duck-facebook-app-id', variable: 'VITE_FACEBOOK_APP_ID'),
-    string(credentialsId: 'furious-duck-smtp-host', variable: 'SMTP_HOST'),
-    string(credentialsId: 'furious-duck-smtp-port', variable: 'SMTP_PORT'),
-    string(credentialsId: 'furious-duck-smtp-secure', variable: 'SMTP_SECURE'),
-    string(credentialsId: 'furious-duck-smtp-user', variable: 'SMTP_USER'),
-    string(credentialsId: 'furious-duck-smtp-pass', variable: 'SMTP_PASS'),
-    string(credentialsId: 'furious-duck-smtp-from', variable: 'SMTP_FROM'),
+    string(credentialsId: env.DATABASE_CREDENTIAL_ID, variable: 'DATABASE_URL'),
+    string(credentialsId: env.JWT_CREDENTIAL_ID, variable: 'JWT_SECRET'),
+    string(credentialsId: env.TURNSTILE_SITE_CREDENTIAL_ID, variable: 'VITE_TURNSTILE_SITE_KEY'),
+    string(credentialsId: env.TURNSTILE_SECRET_CREDENTIAL_ID, variable: 'TURNSTILE_SECRET_KEY'),
+    string(credentialsId: env.GOOGLE_CLIENT_CREDENTIAL_ID, variable: 'VITE_GOOGLE_CLIENT_ID'),
+    string(credentialsId: env.FACEBOOK_APP_CREDENTIAL_ID, variable: 'VITE_FACEBOOK_APP_ID'),
+    string(credentialsId: env.SMTP_HOST_CREDENTIAL_ID, variable: 'SMTP_HOST'),
+    string(credentialsId: env.SMTP_PORT_CREDENTIAL_ID, variable: 'SMTP_PORT'),
+    string(credentialsId: env.SMTP_SECURE_CREDENTIAL_ID, variable: 'SMTP_SECURE'),
+    string(credentialsId: env.SMTP_USER_CREDENTIAL_ID, variable: 'SMTP_USER'),
+    string(credentialsId: env.SMTP_PASS_CREDENTIAL_ID, variable: 'SMTP_PASS'),
+    string(credentialsId: env.SMTP_FROM_CREDENTIAL_ID, variable: 'SMTP_FROM'),
     // Compte de service en lecture seule sur Jenkins, utilise par
     // l'exporter DORA pour lire l'historique de builds.
     string(credentialsId: 'furious-duck-jenkins-api-user', variable: 'DORA_JENKINS_USER'),
     string(credentialsId: 'furious-duck-jenkins-api-token', variable: 'DORA_JENKINS_TOKEN'),
     // Mot de passe admin Grafana. Grafana le reapplique a chaque demarrage :
     // sans ce credential, chaque deploiement ecraserait le mot de passe reel.
-    string(credentialsId: 'furious-duck-grafana-admin-password', variable: 'GRAFANA_ADMIN_PASSWORD')
+    string(credentialsId: env.GRAFANA_ADMIN_PASSWORD_CREDENTIAL_ID, variable: 'GRAFANA_ADMIN_PASSWORD')
   ]) {
     sh '''
       cat > backend/.env <<EOF
