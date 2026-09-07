@@ -32,6 +32,7 @@ furious-duck/
 |-- docker-compose.dev.live.yml
 |-- docker-compose.ci.yml
 |-- docker-compose.jenkins.yml
+|-- docker-compose.jenkins.prod.yml
 |-- docker-compose.monitoring.yml
 |-- docker-compose.traefik.yml
 |-- Jenkinsfile
@@ -209,6 +210,7 @@ PROD :
 https://dsp5-archi-o24a-g2.fr
 https://dsp5-archi-o24a-g2.com
 https://dsp5-archi-o24a-g2.fr/api/health
+https://dsp5-archi-o24a-g2.fr/jenkins/
 https://dsp5-archi-o24a-g2.fr/prometheus/
 https://dsp5-archi-o24a-g2.fr/grafana/
 https://dsp5-archi-o24a-g2.fr/traefik/dashboard/
@@ -402,6 +404,27 @@ furious-duck-sonarqube-host-url
 furious-duck-sonarqube-token
 ```
 
+### Jenkins en production
+
+Le fichier `docker-compose.jenkins.prod.yml` lance Jenkins sur la VM PROD avec la meme logique que les autres environnements :
+
+- Jenkins est disponible sur `/jenkins/` ;
+- Jenkins utilise le Docker local de la VM via `/var/run/docker.sock` ;
+- la pipeline `main` peut donc lancer Docker Compose directement sur la VM PROD ;
+- l'exporter DORA peut joindre Jenkins via le nom interne `furious_duck_jenkins`.
+
+Lancement sur la VM PROD :
+
+```bash
+docker compose -f docker-compose.jenkins.prod.yml up -d
+```
+
+URL :
+
+```text
+https://dsp5-archi-o24a-g2.fr/jenkins/
+```
+
 ## Monitoring
 
 Prometheus :
@@ -431,6 +454,7 @@ Traefik dashboard :
 - `docker-compose.prod.yml` : mode live PROD derriere Traefik.
 - `docker-compose.ci.yml` : configuration utilisee par Jenkins pour les tests fonctionnels.
 - `docker-compose.jenkins.yml` : lancement Jenkins.
+- `docker-compose.jenkins.prod.yml` : lancement Jenkins sur PROD.
 - `docker-compose.monitoring.yml` : Prometheus et Grafana PREPROD.
 - `docker-compose.monitoring.dev.yml` : Prometheus et Grafana DEV.
 - `docker-compose.monitoring.prod.yml` : Prometheus et Grafana PROD.

@@ -1,0 +1,31 @@
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    container_name: furious_duck_jenkins
+    restart: unless-stopped
+    user: root
+    environment:
+      - JENKINS_OPTS=--prefix=/jenkins
+    volumes:
+      - jenkins_home_prod:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose:ro
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.jenkins-prod.rule=(Host(`dsp5-archi-o24a-g2.fr`) || Host(`dsp5-archi-o24a-g2.com`)) && (Path(`/jenkins`) || PathPrefix(`/jenkins/`))"
+      - "traefik.http.routers.jenkins-prod.priority=1000"
+      - "traefik.http.routers.jenkins-prod.entrypoints=websecure"
+      - "traefik.http.routers.jenkins-prod.tls=true"
+      - "traefik.http.routers.jenkins-prod.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jenkins-prod.loadbalancer.server.port=8080"
+
+volumes:
+  jenkins_home_prod:
+
+networks:
+  traefik_proxy:
+    external: true
