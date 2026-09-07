@@ -290,7 +290,7 @@
 .faq-item[open] .faq-icon {
   transform: rotate(45deg);
 }
-.faq-item p {
+.faq-content {
   margin: 0;
   padding: 0 20px 20px;
   font-size: 14.5px;

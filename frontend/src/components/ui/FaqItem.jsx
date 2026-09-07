@@ -7,7 +7,7 @@ export default function FaqItem({ question, children, defaultOpen = false }) {
         {question}
         <span className="faq-icon">+</span>
       </summary>
-      <p>{children}</p>
+      <div className="faq-content">{children}</div>
     </details>
   );
 }
