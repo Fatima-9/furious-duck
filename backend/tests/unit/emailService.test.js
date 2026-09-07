@@ -69,3 +69,86 @@ describe("emailService dev fallback", () => {
     logSpy.mockRestore();
   });
 });
+
+describe("emailService SMTP transport", () => {
+  const OLD_ENV = { ...process.env };
+
+  beforeEach(() => {
+    jest.resetModules();
+  });
+
+  afterEach(() => {
+    process.env = { ...OLD_ENV };
+    jest.dontMock("nodemailer");
+    jest.resetModules();
+  });
+
+  test("sends emails with SMTP authentication when SMTP_USER is configured", async () => {
+    const sendMail = jest.fn().mockResolvedValue({ messageId: "mail-1" });
+    const createTransport = jest.fn(() => ({ sendMail }));
+
+    jest.doMock("nodemailer", () => ({ createTransport }));
+
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_PORT = "465";
+    process.env.SMTP_SECURE = "true";
+    process.env.SMTP_USER = "smtp-user";
+    process.env.SMTP_PASS = "smtp-pass";
+    process.env.SMTP_FROM = "The Tip Top <contact@example.com>";
+
+    const smtpEmailService = require("../../services/emailService");
+
+    const result = await smtpEmailService.sendMail({
+      to: "client@example.com",
+      subject: "Bonjour",
+      text: "Message",
+      html: "<p>Message</p>",
+    });
+
+    expect(createTransport).toHaveBeenCalledWith({
+      host: "smtp.example.com",
+      port: 465,
+      secure: true,
+      auth: { user: "smtp-user", pass: "smtp-pass" },
+    });
+    expect(sendMail).toHaveBeenCalledWith({
+      from: "The Tip Top <contact@example.com>",
+      to: "client@example.com",
+      subject: "Bonjour",
+      text: "Message",
+      html: "<p>Message</p>",
+    });
+    expect(result).toEqual({ sent: true, dev: false });
+  });
+
+  test("creates an SMTP transport without auth when SMTP_USER is absent", async () => {
+    const sendMail = jest.fn().mockResolvedValue({ messageId: "mail-2" });
+    const createTransport = jest.fn(() => ({ sendMail }));
+
+    jest.doMock("nodemailer", () => ({ createTransport }));
+
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_PORT = "";
+    process.env.SMTP_SECURE = "false";
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
+
+    const smtpEmailService = require("../../services/emailService");
+
+    await smtpEmailService.sendPasswordChangedEmail("client@example.com");
+
+    expect(createTransport).toHaveBeenCalledWith({
+      host: "smtp.example.com",
+      port: 587,
+      secure: false,
+      auth: undefined,
+    });
+    expect(sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: "The Tip Top <no-reply@thetiptop.fr>",
+        to: "client@example.com",
+        subject: "Votre mot de passe a ete modifie",
+      })
+    );
+  });
+});
