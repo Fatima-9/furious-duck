@@ -65,13 +65,13 @@ export default function Footer() {
             Maison de the bio. Jeu-concours 100 % gagnant pour celebrer l'ouverture de nos 10 boutiques.
           </p>
           <div className="ttt-social-icons" aria-label="Reseaux sociaux">
-            <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram">
+            <a href="https://www.instagram.com/thetiptopcom/" target="_blank" rel="noreferrer" aria-label="Instagram">
               <InstagramIcon />
             </a>
-            <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" aria-label="Facebook">
+            <a href="https://www.facebook.com/profile.php?id=61593945846306" target="_blank" rel="noreferrer" aria-label="Facebook">
               <FacebookIcon />
             </a>
-            <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer" aria-label="LinkedIn">
+            <a href="https://www.linkedin.com/in/thétiptop-comres-487060434/" target="_blank" rel="noreferrer" aria-label="LinkedIn">
               <LinkedInIcon />
             </a>
           </div>
